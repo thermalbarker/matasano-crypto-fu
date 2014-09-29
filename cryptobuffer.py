@@ -33,9 +33,15 @@ class cryptobuffer(object):
     def xor(self, other):
         result = cryptobuffer()
         b = bytearray(len(self.mBytes))
-        for i in range(len(self.mBytes)):
-            b[i] = self.mBytes[i] ^ other.mBytes[i]
-        result.mBytes = b
+        if (len(other.mBytes) > 0):
+            j = 0
+            for i in range(len(self.mBytes)):
+                # Reset j for a repeating key xor
+                if (j >= len(other.mBytes)):
+                    j = 0
+                b[i] = self.mBytes[i] ^ other.mBytes[j]
+                j += 1
+            result.mBytes = b
         return result
 
 
