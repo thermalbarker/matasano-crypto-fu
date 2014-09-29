@@ -9,8 +9,21 @@ class xor_test(unittest.TestCase):
         self.xorcracker = xor()
 
     def test_crackhex(self):
+        print 
         results = self.xorcracker.crackhex(self.hexmsg)
-        self.assertEqual("X", min(results, key=results.get))
+        minline = min(results, key=lambda t: t[1])
+        print "Most likely character: ", minline[0]
+        print "With text: ", minline[2].toString()
+        self.assertEqual("X", minline[0])
+
+    def test_crackfile(self):
+        results = self.xorcracker.crackfile(self.testfile)
+        minline = min(results, key=lambda t: t[2])
+        print "Most likely line: ", minline[0]
+        print "Most likely character: ", minline[1]
+        print "With text: ", minline[3].toString()
+        self.assertEqual("5", minline[1])
+        self.assertEqual(171, minline[0])
 
 if __name__ == '__main__':
     unittest.main()

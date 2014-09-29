@@ -4,26 +4,32 @@ import string
 
 class xor(object):
 
+    
     def crackhex(self, cypherhex):
         buff = cryptobuffer()
         buff.fromHex(cypherhex)
-        cyphertext = buff.toString()
-        length = len(cyphertext)
-        print "Encrypted text: ", buff.toString()
-        results = {}
+        results = list()
 
         # Encrypted with a single character XOR
-        for c in string.uppercase:
-            charbuff = cryptobuffer()
-            charbuff.fromString(c * length)
-            print "Decrypting with: " , charbuff.toString()
-            charbuff.xor(buff)
-            print charbuff.toString()
+        for c in string.printable:
+            charbuff = buff.singlecharxor(c)
             f = frequencyanalyser.frequency()
             f.addText(charbuff.toString())
             chisq = f.engchisq()
-            results[c] = chisq
-            print "Chi2 = ", chisq
-        minkey = min(results, key=results.get)
-        print "Most likely character: ", minkey
-        return results
+            result = (c, chisq, charbuff)
+            results.append(result)
+        return sorted(results, key=lambda tup: tup[1])
+
+    def crackfile(self, testfile):
+        infile = open(testfile, "r")
+        fileresults = list()
+        i = 0
+        for line in infile:
+            i += 1
+            cypherhex = line.strip()
+            results = self.crackhex(cypherhex)
+            for result in results:
+                r = (i, result[0], result[1], result[2])
+                fileresults.append(r)
+        infile.close()
+        return sorted(fileresults, key=lambda tup: tup[2])

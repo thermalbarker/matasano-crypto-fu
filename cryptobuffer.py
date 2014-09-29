@@ -24,11 +24,18 @@ class cryptobuffer(object):
     def toString(self):
         return str(self.mBytes)
 
+    def singlecharxor(self, char):
+        charbuff = cryptobuffer()
+        length = len(self.toString()) 
+        charbuff.fromString(char * length)
+        return self.xor(charbuff)
+
     def xor(self, other):
+        result = cryptobuffer()
         b = bytearray(len(self.mBytes))
         for i in range(len(self.mBytes)):
             b[i] = self.mBytes[i] ^ other.mBytes[i]
-        self.mBytes = b
-            
+        result.mBytes = b
+        return result
 
 
