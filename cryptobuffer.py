@@ -1,10 +1,10 @@
 import base64
 import binascii
 
-class cryptobuffer(object):
+class cryptobuffer(bytearray):
 
     def __init__(self):
-        self.mBytes = bytearray()
+        self.mBytes = self
     
     def fromHex(self, text):
         self.mBytes = bytearray.fromhex(text)
@@ -23,6 +23,15 @@ class cryptobuffer(object):
 
     def toString(self):
         return str(self.mBytes)
+
+    def fromBase64File(self, filename):
+        infile = open(filename, "r")
+        self.mBytes = bytearray()
+        for line in infile:
+            bufferline = cryptobuffer()
+            bufferline.fromBase64(line.strip())
+            self.mBytes.extend(bufferline.mBytes)
+        infile.close()
 
     def singlecharxor(self, char):
         charbuff = cryptobuffer()
@@ -44,4 +53,16 @@ class cryptobuffer(object):
             result.mBytes = b
         return result
 
+    def bitCount(self):
+        bitsOne = 0
+        for byte in self.mBytes:
+            bitsOne += bin(byte).count("1")
+        return bitsOne
 
+    def hamming(self, other):
+        return self.xor(other).bitCount()
+        
+    def subBuffer(self, start, length):
+        result = cryptobuffer()
+        result.mBytes = self.mBytes[start:start+length]
+        return result
