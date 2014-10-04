@@ -53,8 +53,7 @@ class aes(object):
             0x04, 0x7e, 0xba, 0x77, 0xd6, 0x26, 0xe1, 0x69, 0x14, 0x63, 0x55,
             0x21, 0x0c, 0x7d]
 
-            rcon = [
-            0x8d, 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x1b, 0x36, 0x6c, 0xd8, 0xab, 0x4d, 0x9a, 
+    rcon = [0x8d, 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x1b, 0x36, 0x6c, 0xd8, 0xab, 0x4d, 0x9a, 
             0x2f, 0x5e, 0xbc, 0x63, 0xc6, 0x97, 0x35, 0x6a, 0xd4, 0xb3, 0x7d, 0xfa, 0xef, 0xc5, 0x91, 0x39, 
             0x72, 0xe4, 0xd3, 0xbd, 0x61, 0xc2, 0x9f, 0x25, 0x4a, 0x94, 0x33, 0x66, 0xcc, 0x83, 0x1d, 0x3a, 
             0x74, 0xe8, 0xcb, 0x8d, 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x1b, 0x36, 0x6c, 0xd8, 
@@ -73,26 +72,26 @@ class aes(object):
             
     def subBytes(self, buff):
         for i in range(16):
-            buff[i] = sbox[buff[i]]
+            buff[i] = self.sbox[buff[i]]
         return buff
 
     def rsubBytes(self, buff):
         for i in range(16):
-            buff[i] = rsbox[buff[i]]
+            buff[i] = self.rsbox[buff[i]]
         return buff
 
     def shiftRows(self, buff):
-        buff[0:3]   = buff[0], buff[1], buff[2], buff[3]
-        buff[4:7]   = buff[5], buff[6], buff[7], buff[4]
-        buff[8:11]  = buff[10], buff[11], buff[8], buff[9]
-        buff[12:15] = buff[15], buff[12], buff[13], buff[14]
+        buff[0:4]   = buff[0], buff[1], buff[2], buff[3]
+        buff[4:8]   = buff[5], buff[6], buff[7], buff[4]
+        buff[8:12]  = buff[10], buff[11], buff[8], buff[9]
+        buff[12:16] = buff[15], buff[12], buff[13], buff[14]
         return buff
 
     def rshiftRows(self, buff):
-        buff[0:3]   = buff[0], buff[1], buff[2], buff[3]
-        buff[4:7]   = buff[7], buff[4], buff[5], buff[6]
-        buff[8:11]  = buff[10], buff[11], buff[8], buff[9]
-        buff[12:15] = buff[13], buff[14], buff[15], buff[12]
+        buff[0:4]   = buff[0], buff[1], buff[2], buff[3]
+        buff[4:8]   = buff[7], buff[4], buff[5], buff[6]
+        buff[8:12]  = buff[10], buff[11], buff[8], buff[9]
+        buff[12:16] = buff[13], buff[14], buff[15], buff[12]
         return buff
         
     def galois_multiply(self, a, b):
@@ -105,6 +104,7 @@ class aes(object):
             carry = a & 0x80
             # shift left
             a <<= 1
+            a &= 0xff
             if (carry):
                 a ^= 0x1B
         return p
@@ -116,7 +116,8 @@ class aes(object):
         buff[0] = g(a[0], b[0]) ^ g(a[1], b[1]) ^ g(a[2], b[2]) ^ g(a[3], b[3])
         buff[1] = g(a[0], b[3]) ^ g(a[1], b[0]) ^ g(a[2], b[1]) ^ g(a[3], b[2])
         buff[2] = g(a[0], b[2]) ^ g(a[1], b[3]) ^ g(a[2], b[0]) ^ g(a[3], b[1])
-        buff[3] = g(a[0], b[1]) ^ g(a[1], b[2]) ^ g(a[2], b[3]) ^ g(a[3], b[4])
+        buff[3] = g(a[0], b[1]) ^ g(a[1], b[2]) ^ g(a[2], b[3]) ^ g(a[3], b[0])
+        return buff
 
     def mixColumn(self, buff):
         b = (2, 3, 1, 1)
@@ -141,10 +142,11 @@ class aes(object):
         return buff
 
     def keyCore(self, t, r):
-        o = r[1:] + r[:1]
+        o = t[1:] + t[:1]
         for i in range(4):
             o[i] = self.sbox[o[i]]
         o[0] ^= self.rcon[r]
+        return o
 
     def expandKey(self, key):
         n = 16
@@ -156,12 +158,106 @@ class aes(object):
             eKey[i] = key[i]
         size += n
 
-        r = 0
+        r = 1
         while size < b:
             t = eKey[size-4:size]
             if size % n == 0:
                 t = self.keyCore(t, r)
                 r += 1
-            eKey[size:size+4] = t ^ eKey[size-4:size]
-            size += 4
+            for i in range(4):
+                eKey[size] = t[i] ^ eKey[size-n]
+                size += 1
         return eKey
+
+    def addRoundKey(self, buff, roundKey):
+        for i in range(16):
+            buff[i] ^= roundKey[i]
+        return buff
+
+    def initRound(self, buff, roundKey):
+        buff = self.addRoundKey(buff, roundKey)
+        return buff
+
+    def singleRound(self, buff, roundKey):
+        buff = self.subBytes(buff)
+        buff = self.shiftRows(buff)
+        buff = self.mixColumns(buff)
+        buff = self.addRoundKey(buff, roundKey)
+        return buff
+
+    def finalRound(self, buff, roundKey):
+        buff = self.subBytes(buff)
+        buff = self.shiftRows(buff)
+        buff = self.addRoundKey(buff, roundKey)
+        return buff
+
+    def initRoundInv(self, buff, roundKey):
+        buff = self.addRoundKey(buff, roundKey)
+        return buff
+
+    def singleRoundInv(self, buff, roundKey):
+        buff = self.rshiftRows(buff)
+        buff = self.rsubBytes(buff)
+        buff = self.addRoundKey(buff, roundKey)
+        buff = self.rmixColumns(buff)
+        return buff
+
+    def finalRoundInv(self, buff, roundKey):
+        buff = self.rshiftRows(buff)
+        buff = self.rsubBytes(buff)
+        buff = self.addRoundKey(buff, roundKey)
+        return buff
+
+    def encryptBlock(self, buff, key):
+        r = 10
+        s = 16
+        k = 0
+
+        expandedKey = self.expandKey(key)
+        buff = self.initRound(buff, expandedKey[0:s])
+        k += s
+        for i in range(r-1):
+            roundKey = expandedKey[k:k+s]
+            buff = self.singleRound(buff, roundKey)
+            k += s
+        roundKey = expandedKey[k:k+s]
+        buff = self.finalRound(buff, roundKey)
+        return buff
+
+    def decryptBlock(self, buff, key):
+        r = 10
+        s = 16
+        k = r*s
+        expandedKey = self.expandKey(key)
+        buff = self.initRoundInv(buff, expandedKey[k:k+s])
+        k -= s
+        for i in range(r-1):
+            roundKey = expandedKey[k:k+s]
+            buff = self.singleRoundInv(buff, roundKey)
+            k -= s
+        roundKey = expandedKey[k:k+s]
+        buff = self.finalRoundInv(buff, roundKey)
+        return buff
+
+    def encryptECB(self, buff, key):
+        s = 16
+        blocks = len(buff) // s
+        result = bytearray()
+        k = 0
+        for i in range(blocks):
+            block = buff[k:s]
+            result.extend(self.encryptBlock(block,key))
+            k += s
+        return result
+        
+    def decryptECB(self, buff, key):
+        s = 16
+        blocks = len(buff) // s
+        result = bytearray()
+        k = 0
+        for i in range(blocks):
+            block = buff[k:k+s]
+            result.extend(self.decryptBlock(block,key))
+            k += s
+        return result
+ 

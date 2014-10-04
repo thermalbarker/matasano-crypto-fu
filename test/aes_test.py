@@ -9,6 +9,8 @@ class aes_test(unittest.TestCase):
         self.key = cryptobuffer()
         self.ekey = cryptobuffer()
         self.skey = cryptobuffer()
+        self.buff = cryptobuffer()
+        self.cypher = cryptobuffer()
 
     def test_keyExpansion(self):
         self.key.fromHex("00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00")
@@ -24,9 +26,26 @@ class aes_test(unittest.TestCase):
                           "b1 d4 d8 e2 8a 7d b9 da 1d 7b b3 de 4c 66 49 41" + 
                           "b4 ef 5b cb 3e 92 e2 11 23 e9 51 cf 6f 8f 18 8e") 
         self.ekey.mBytes = self.myAes.expandKey(self.key.mBytes)
+        print
         print "Got:  ", self.ekey.toHex()
         print "Want: ", self.skey.toHex()
         self.assertEqual(self.skey.mBytes, self.ekey.mBytes)
+
+    def test_singleBlock(self):
+        self.key.fromHex("2b7e151628aed2a6abf7158809cf4f3c")
+        self.buff.fromHex("6bc1bee22e409f96e93d7e117393172a")
+        self.cypher.fromHex("3ad77bb40d7a3660a89ecaf32466ef97")
+        self.buff.mBytes = self.myAes.encryptBlock(self.buff.mBytes, self.key.mBytes)
+        self.assertEqual(self.cypher.toHex(), self.buff.toHex())
+
+    def test_ecbDecrypt(self):
+        print
+        filename = "data/7.txt"
+        self.key.fromString("YELLOW SUBMARINE")
+        print "Key:  ", self.key.toHex()
+        self.buff.fromBase64File(filename)
+        self.buff.mBytes = self.myAes.decryptECB(self.buff.mBytes, self.key.mBytes)
+        #print self.buff.toString()
 
 if __name__ == '__main__':
     unittest.main()

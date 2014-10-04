@@ -7,6 +7,8 @@ class cryptobuffer(bytearray):
         self.mBytes = self
     
     def fromHex(self, text):
+        text.strip()
+        text.replace(" ", "")
         self.mBytes = bytearray.fromhex(text)
 
     def toHex(self):
@@ -16,6 +18,8 @@ class cryptobuffer(bytearray):
         return base64.b64encode(self.toString())
 
     def fromBase64(self, text):
+        text.strip()
+        text.replace(" ", "")
         self.mBytes = bytearray(base64.b64decode(text))
 
     def fromString(self, text):
