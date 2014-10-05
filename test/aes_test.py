@@ -27,25 +27,56 @@ class aes_test(unittest.TestCase):
                           "b4 ef 5b cb 3e 92 e2 11 23 e9 51 cf 6f 8f 18 8e") 
         self.ekey.mBytes = self.myAes.expandKey(self.key.mBytes)
         print
-        print "Got:  ", self.ekey.toHex()
-        print "Want: ", self.skey.toHex()
+        #print "Got:  ", self.ekey.toHex()
+        #print "Want: ", self.skey.toHex()
         self.assertEqual(self.skey.mBytes, self.ekey.mBytes)
 
+    def test_mixColumns(self):
+        self.buff.fromHex("db 13 53 45")
+        self.cypher.fromHex("8e 4d a1 bc")
+        self.buff.mBytes = self.myAes.mixColumn(self.buff.mBytes)
+        self.assertEqual(self.cypher.toHex(), self.buff.toHex())
+
+    def test_shiftRows(self):
+        self.buff.fromHex("00 01 02 03"+
+                          "10 11 12 13"+
+                          "20 21 22 23"+
+                          "30 31 32 33")
+        self.cypher.fromHex("00 01 02 03"+
+                            "11 12 13 10"+
+                            "22 23 20 21"+
+                            "33 30 31 32")
+        self.buff.mBytes = self.myAes.shiftRows(self.buff.mBytes)
+        self.assertEqual(self.cypher.toHex(), self.buff.toHex())
+
     def test_singleBlock(self):
+        print
         self.key.fromHex("2b7e151628aed2a6abf7158809cf4f3c")
-        self.buff.fromHex("6bc1bee22e409f96e93d7e117393172a")
-        self.cypher.fromHex("3ad77bb40d7a3660a89ecaf32466ef97")
+        self.buff.fromHex("32 43 f6 a8 88 5a 30 8d 31 31 98 a2 e0 37 07 34")
+        self.cypher.fromHex("3925841d02dc09fbdc118597196a0b32")
+        self.buff.mBytes = self.myAes.encryptBlock(self.buff.mBytes, self.key.mBytes)
+        self.assertEqual(self.cypher.toHex(), self.buff.toHex())
+
+
+    def test_singleBlockZeroKey(self):
+        print
+        self.key.fromHex("00000000000000000000000000000000")
+        self.buff.fromHex("80000000000000000000000000000000")
+        self.cypher.fromHex("3ad78e726c1ec02b7ebfe92b23d9ec34")
         self.buff.mBytes = self.myAes.encryptBlock(self.buff.mBytes, self.key.mBytes)
         self.assertEqual(self.cypher.toHex(), self.buff.toHex())
 
     def test_ecbDecrypt(self):
         print
+        cypher2 = cryptobuffer()
         filename = "data/7.txt"
         self.key.fromString("YELLOW SUBMARINE")
         print "Key:  ", self.key.toHex()
-        self.buff.fromBase64File(filename)
-        self.buff.mBytes = self.myAes.decryptECB(self.buff.mBytes, self.key.mBytes)
-        #print self.buff.toString()
+        self.cypher.fromBase64File(filename)
+        self.buff.mBytes = self.myAes.decryptECB(self.cypher.mBytes, self.key.mBytes)
+        print self.buff.toString()
+        cypher2.mBytes = self.myAes.encryptECB(self.buff.mBytes, self.key.mBytes)
+        self.assertEqual(self.cypher.toHex(), cypher2.toHex())
 
 if __name__ == '__main__':
     unittest.main()
