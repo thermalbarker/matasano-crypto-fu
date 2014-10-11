@@ -56,35 +56,46 @@ class aesanalysis(object):
         result = list()
         mystring = cryptobuffer()
         cypher = cryptobuffer()
+        blockoffset = len(decrypted) % blocksize
+        blocknumber = len(decrypted) // blocksize
+        start = blocknumber*blocksize
+        end = (blocknumber+1)*blocksize
         # Initialised my string with padding
-        for i in range(0, blocksize-len(decrypted) - 1):
+        for i in range(0, blocksize - blockoffset - 1):
             mystring.mBytes.append(self.padbyte)
         # Add what has already been decrypted
         mystring.mBytes.extend(decrypted.mBytes)
         # Add a dummy byte
         mystring.mBytes.append(self.padbyte)
+        #print blockoffset, blocknumber, blocksize, len(mystring.mBytes)
         # Build the dictionary
         for i in range(0, 256):
             mystring.mBytes[-1] = i
-            cypher.mBytes = func(mystring.mBytes)[0:blocksize]
-            #print i, len(mystring.mBytes), cypher.toHex()
+            cypher.mBytes = func(mystring.mBytes)[start:end]
+            #print i, len(mystring.mBytes), mystring.toHex(), "[", start, ":", end, "]", cypher.toHex()
             result.append(cypher.mBytes)
         return result
 
     def findEcbByte(self, func, blocksize):
         cypher = cryptobuffer()
         decrypted = cryptobuffer()
+        # Get the total length of the unencrypted string
+        totallen = len(func(bytearray()))
         # Initialised my string
-        for j in range(0, blocksize):
+        for j in range(0, totallen):
             # Build an array of padding bytes:
             # 'AAAAAAAAAAAAAAA'
             # which is 15 bytes long
             mystring = cryptobuffer()
-            for i in range(1, blocksize-j):
+            blockoffset = len(decrypted) % blocksize
+            blocknumber = len(decrypted) // blocksize
+            start = blocknumber*blocksize
+            end = (blocknumber+1)*blocksize
+            for i in range(1, blocksize-blockoffset):
                 mystring.mBytes.append(self.padbyte)
             # Encrypt with the string appended before the unknown text
             # the 16th byte will be the 1st byte of the text
-            cypher.mBytes = func(mystring.mBytes)[0:blocksize]
+            cypher.mBytes = func(mystring.mBytes)[start:end]
             # Add the existing decrypted message
             mystring.extend(decrypted.mBytes)
             # Build a dictionary of possible encrypted messages
@@ -92,7 +103,10 @@ class aesanalysis(object):
             # Find the byte of the unknown text
             byte = myList.index(cypher.mBytes)
             decrypted.mBytes.append(byte)
+            print "Decrypted ", j, " bytes:"
+            print "------------------------"
             print decrypted.toString()
+            print "------------------------"
         return decrypted
 
     def decryptAesEcbFunc(self, func):
