@@ -72,7 +72,7 @@ class aesanalysis(object):
         for i in range(0, 256):
             mystring.mBytes[-1] = i
             cypher.mBytes = func(mystring.mBytes)[start:end]
-            #print i, len(mystring.mBytes), mystring.toHex(), "[", start, ":", end, "]", cypher.toHex()
+            #print i, len(mystring.mBytes), "[", start, ":", end, "]", cypher.toHex()
             result.append(cypher.mBytes)
         return result
 
@@ -102,7 +102,12 @@ class aesanalysis(object):
             # Build a dictionary of possible encrypted messages
             myList = self.makeEcbDict(func, decrypted.mBytes, blocksize) 
             # Find the byte of the unknown text
-            byte = myList.index(cypher.mBytes)
+            try:
+                byte = myList.index(cypher.mBytes)
+            except ValueError:
+                print "Could not found encrypted block ==> finished"
+                break
+
             decrypted.mBytes.append(byte)
             print "Decrypted ", j, " bytes:"
             print "------------------------"
@@ -119,4 +124,7 @@ class aesanalysis(object):
         usingEcb = self.detectAesEcbFunc(func)
         if (usingEcb):
             print "Using ECB!"
-        return self.findEcbByte(func, keysize)
+        result =  self.findEcbByte(func, keysize)
+        # For some reason, always an additional byte, so delete it:
+        del(result[-1])
+        return result
