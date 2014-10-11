@@ -1,7 +1,13 @@
-from cryptobuffer import cryptobuffer
+from enum import Enum, unique
 
+@unique
+class AesBlockmode(Enum):
+    ECB = 0
+    CBC = 1
 
 class aes(object):
+
+    blockSize = 16
 
     sbox =  [0x63, 0x7c, 0x77, 0x7b, 0xf2, 0x6b, 0x6f, 0xc5, 0x30, 0x01, 0x67,
             0x2b, 0xfe, 0xd7, 0xab, 0x76, 0xca, 0x82, 0xc9, 0x7d, 0xfa, 0x59,
@@ -72,12 +78,12 @@ class aes(object):
             
 
     def subBytes(self, buff):
-        for i in range(16):
+        for i in range(self.blockSize):
             buff[i] = self.sbox[buff[i]]
         return buff
 
     def rsubBytes(self, buff):
-        for i in range(16):
+        for i in range(self.blockSize):
             buff[i] = self.rsbox[buff[i]]
         return buff
 
@@ -131,16 +137,16 @@ class aes(object):
 
     def mixColumns(self, buff):
         for i in range(4):
-            column = buff[i:i+16:4] 
+            column = buff[i:i+self.blockSize:4] 
             column = self.mixColumn(column)
-            buff[i:i+16:4] = column
+            buff[i:i+self.blockSize:4] = column
         return buff
 
     def rmixColumns(self, buff):
         for i in range(4):
-            column = buff[i:i+16:4] 
+            column = buff[i:i+self.blockSize:4] 
             column = self.rmixColumn(column)
-            buff[i:i+16:4] = column
+            buff[i:i+self.blockSize:4] = column
         return buff
 
     def keyCore(self, t, r):
@@ -151,7 +157,7 @@ class aes(object):
         return o
 
     def expandKey(self, key):
-        n = 16
+        n = self.blockSize
         b = 176
 
         eKey = bytearray(b)
@@ -172,7 +178,7 @@ class aes(object):
         return eKey
 
     def createRoundKey(self, expandedKey, roundKeyPointer):
-        roundKey = bytearray(16)
+        roundKey = bytearray(self.blockSize)
         # Swap around the columns
         for i in range(4):
             for j in range(4):
@@ -180,7 +186,7 @@ class aes(object):
         return roundKey
 
     def addRoundKey(self, buff, roundKey):
-        for i in range(16):
+        for i in range(self.blockSize):
             buff[i] ^= roundKey[i]
         return buff
 
@@ -219,7 +225,7 @@ class aes(object):
         return buff
 
     def createBlock(self, buff):
-        block = bytearray(16)
+        block = bytearray(self.blockSize)
         # Set the block values, for the block:
         # a0,0 a0,1 a0,2 a0,3
         # a1,0 a1,1 a1,2 a1,3
@@ -235,7 +241,7 @@ class aes(object):
         return block
 
     def expandBlock(self, block):
-        output = bytearray(16)
+        output = bytearray(self.blockSize)
         # unmap the block again into the output
         for k in range(4):
             # iterate over the rows
@@ -245,7 +251,7 @@ class aes(object):
 
     def encryptBlock(self, buff, key):
         r = 10
-        s = 16
+        s = self.blockSize
         k = 0
 
         expandedKey = self.expandKey(key)
@@ -262,7 +268,7 @@ class aes(object):
 
     def decryptBlock(self, buff, key):
         r = 10
-        s = 16
+        s = self.blockSize
         k = r*s
         expandedKey = self.expandKey(key)
         block = self.createBlock(buff)
@@ -275,7 +281,7 @@ class aes(object):
         return self.expandBlock(block)
 
     def encryptECB(self, buff, key):
-        s = 16
+        s = self.blockSize
         blocks = len(buff) // s
         result = bytearray()
         k = 0
@@ -286,7 +292,7 @@ class aes(object):
         return result
         
     def decryptECB(self, buff, key):
-        s = 16
+        s = self.blockSize
         blocks = len(buff) // s
         result = bytearray()
         k = 0
@@ -303,7 +309,7 @@ class aes(object):
         return result
 
     def encryptCBC(self, buff, key, iv):
-        s = 16
+        s = self.blockSize
         blocks = len(buff) // s
         result = bytearray()
         k = 0
@@ -316,7 +322,7 @@ class aes(object):
         return result
         
     def decryptCBC(self, buff, key, iv):
-        s = 16
+        s = self.blockSize
         blocks = len(buff) // s
         result = bytearray()
         k = 0
