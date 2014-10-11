@@ -1,5 +1,6 @@
 import base64
 import binascii
+import math
 
 class cryptobuffer(bytearray):
 
@@ -72,14 +73,13 @@ class cryptobuffer(bytearray):
         return result
 
     def padPks7(self, padlength):
-        result = cryptobuffer()
         if (padlength < len(self.mBytes)):
             raise Exception("Padding length must be larger than buffer")
         padbyte = padlength - len(self.mBytes)
-        for i in range(0, padlength):
-            if (i < len(self.mBytes)):
-                result.mBytes.append(self.mBytes[i])
-            else:
-                result.mBytes.append(padbyte)
-        return result
+        for i in range(len(self.mBytes), padlength):
+            self.mBytes.append(padbyte)
 
+    def padPks7Block(self, blocksize):
+        result = cryptobuffer()
+        blocks = int(math.ceil(float(len(self.mBytes)) / float(blocksize)))
+        self.padPks7(blocks * blocksize)

@@ -40,6 +40,7 @@ class aesanalysis_test(unittest.TestCase):
         text = cryptobuffer()
         text.fromBase64File("data/12.txt")
         box.aesEcbUnknown = text.mBytes
+        print "Decrypting AES-ECB with chosen boundary attack:"
         decrypted = self.aes_cracker.decryptAesEcbFunc(box.blackBoxFunction2)
         self.assertEqual(text.mBytes, decrypted)
 

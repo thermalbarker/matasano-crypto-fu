@@ -81,6 +81,7 @@ class aesanalysis(object):
         decrypted = cryptobuffer()
         # Get the total length of the unencrypted string
         totallen = len(func(bytearray()))
+        print "Total number of bytes: ", totallen
         # Initialised my string
         for j in range(0, totallen):
             # Build an array of padding bytes:

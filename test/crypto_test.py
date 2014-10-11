@@ -55,8 +55,8 @@ class cryptobuffer_test(unittest.TestCase):
     def test_pks7_padding(self):
         b = cryptobuffer()
         b.fromString("YELLOW SUBMARINE")
-        r = b.padPks7(20)
-        self.assertEqual("YELLOW SUBMARINE\x04\x04\x04\x04", r.toString())
+        b.padPks7(20)
+        self.assertEqual("YELLOW SUBMARINE\x04\x04\x04\x04", b.toString())
 
 if __name__ == '__main__':
     unittest.main()

@@ -1,5 +1,6 @@
 from aes import aes
 from aes import AesBlockmode
+from cryptobuffer import cryptobuffer
 import random
 
 class blackbox(object):
@@ -39,7 +40,8 @@ class blackbox(object):
         return result
 
     def blackBoxFunction2(self, buff):
-        plaintext = bytearray()
-        plaintext.extend(buff)
-        plaintext.extend(self.aesEcbUnknown)
+        plaintext = cryptobuffer()
+        plaintext.mBytes.extend(buff)
+        plaintext.mBytes.extend(self.aesEcbUnknown)
+        plaintext.padPks7Block(aes.blockSize)
         return self.mAes.encryptECB(plaintext, self.ecbKey)
