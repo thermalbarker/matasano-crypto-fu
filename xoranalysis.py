@@ -77,7 +77,10 @@ class xor(object):
                 # Minimum
                 minimum = min(minimum, distance)
         # Average distance
-        totalham = totalham / n
+        if (n != 0):
+            totalham = totalham / n
+        else:
+            totalham = 99999.9
         # add to results
         return (totalham, minimum)
 
