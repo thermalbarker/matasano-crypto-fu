@@ -7,7 +7,7 @@ class cryptobuffer(bytearray):
         self.mBytes = self
     
     def fromHex(self, text):
-        text.strip()
+        text = text.strip()
         text.replace(" ", "")
         self.mBytes = bytearray.fromhex(text)
 
@@ -70,3 +70,16 @@ class cryptobuffer(bytearray):
         result = cryptobuffer()
         result.mBytes = self.mBytes[start:start+length]
         return result
+
+    def padPks7(self, padlength):
+        result = cryptobuffer()
+        if (padlength < len(self.mBytes)):
+            raise Exception("Padding length must be larger than buffer")
+        padbyte = padlength - len(self.mBytes)
+        for i in range(0, padlength):
+            if (i < len(self.mBytes)):
+                result.mBytes.append(self.mBytes[i])
+            else:
+                result.mBytes.append(padbyte)
+        return result
+

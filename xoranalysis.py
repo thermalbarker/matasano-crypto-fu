@@ -36,26 +36,56 @@ class xor(object):
         infile.close()
         return sorted(fileresults, key=lambda tup: tup[2])
 
+    # Takes blocks of keysize in pairs and compares each pair
+    def calculateHam(self, buff, keysize):
+        # with keysize i, we can do buff.size / 2*i distances
+        hams = len(buff.mBytes) // (2*keysize) # // means floor division
+        totalham = 0.0
+        k = 0
+        for j in range(1, hams + 1):
+            slice1 = buff.subBuffer(k, keysize)
+            k += keysize
+            slice2 = buff.subBuffer(k, keysize)
+            k += keysize
+            distance = slice1.hamming(slice2)
+            totalham += distance
+        # Average distance
+        totalham = totalham / hams
+        # Normalise by the keysize
+        totalham = totalham / keysize
+        # add to results
+        return totalham
+
+    # Loops over all block combinations
+    def miniHam(self, buff, keysize):
+        # with keysize i, we can do buff.size / 2*i distances
+        hams = len(buff.mBytes) // keysize # // means floor division
+        n = 0.0
+        totalham = 0.0
+        minimum = 1000.0
+        for j in range(0, hams):
+            k = j * keysize
+            slice1 = buff.subBuffer(k, keysize)
+            for l in range (j + 1, hams):
+                k2 = l * keysize
+                slice2 = buff.subBuffer(k2, keysize)
+                distance = float(slice1.hamming(slice2)) / float(keysize)
+                #print "s[",j,"]: ", slice1.toHex(), " vs s[", l, "] ", slice2.toHex(), " d: ", distance
+                # Total
+                totalham += distance
+                n += 1
+                # Minimum
+                minimum = min(minimum, distance)
+        # Average distance
+        totalham = totalham / n
+        # add to results
+        return (totalham, minimum)
+
+
     def find_keysize(self, buff, maxkeysize):
         results = list()
         for i in range(1, maxkeysize + 1):
-            # with keysize i, we can do buff.size / 2*i distances
-            hams = len(buff.mBytes) // (2*i) # // means floor division
-            totalham = 0.0
-            k = 0
-            for j in range(1, hams + 1):
-                slice1 = buff.subBuffer(k, i)
-                k += i
-                slice2 = buff.subBuffer(k, i)
-                k += i
-                distance = slice1.hamming(slice2)
-                totalham += distance
-            # Average distance
-            totalham = totalham / hams
-            # Normalise by the keysize
-            totalham = totalham / i
-            # add to results
-            row = (i, totalham)
+            row = (i, self.calculateHam(buff, i))
             results.append(row)
         return sorted(results, key=lambda tup: tup[1])
 

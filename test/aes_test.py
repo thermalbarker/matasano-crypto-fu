@@ -68,6 +68,7 @@ class aes_test(unittest.TestCase):
 
     def test_ecbDecrypt(self):
         print
+        print "ECB Decryption"
         cypher2 = cryptobuffer()
         filename = "data/7.txt"
         self.key.fromString("YELLOW SUBMARINE")
@@ -77,6 +78,22 @@ class aes_test(unittest.TestCase):
         print self.buff.toString()
         cypher2.mBytes = self.myAes.encryptECB(self.buff.mBytes, self.key.mBytes)
         self.assertEqual(self.cypher.toHex(), cypher2.toHex())
+
+    def test_cbcDecrypt(self):
+        print
+        print "CBC Decryption"
+        cypher2 = cryptobuffer()
+        iv = cryptobuffer()
+        filename = "data/10.txt"
+        self.key.fromString("YELLOW SUBMARINE")
+        iv.fromHex("00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00")
+        print "Key:  ", self.key.toHex()
+        self.cypher.fromBase64File(filename)
+        self.buff.mBytes = self.myAes.decryptCBC(self.cypher.mBytes, self.key.mBytes, iv.mBytes)
+        print self.buff.toString()
+        cypher2.mBytes = self.myAes.encryptCBC(self.buff.mBytes, self.key.mBytes, iv.mBytes)
+        self.assertEqual(self.cypher.toHex(), cypher2.toHex())
+        
 
 if __name__ == '__main__':
     unittest.main()

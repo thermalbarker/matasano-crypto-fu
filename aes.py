@@ -70,6 +70,7 @@ class aes(object):
             0xc6, 0x97, 0x35, 0x6a, 0xd4, 0xb3, 0x7d, 0xfa, 0xef, 0xc5, 0x91, 0x39, 0x72, 0xe4, 0xd3, 0xbd, 
             0x61, 0xc2, 0x9f, 0x25, 0x4a, 0x94, 0x33, 0x66, 0xcc, 0x83, 0x1d, 0x3a, 0x74, 0xe8, 0xcb, 0x8d]
             
+
     def subBytes(self, buff):
         for i in range(16):
             buff[i] = self.sbox[buff[i]]
@@ -292,6 +293,39 @@ class aes(object):
         for i in range(blocks):
             block = buff[k:k+s]
             result.extend(self.decryptBlock(block,key))
+            k += s
+        return result
+
+    def addLastBlock(self, block, iv):
+        result = bytearray()
+        for i in range(0, len(block)):
+            result.append( block[i] ^ iv[i] )
+        return result
+
+    def encryptCBC(self, buff, key, iv):
+        s = 16
+        blocks = len(buff) // s
+        result = bytearray()
+        k = 0
+        lastblock = iv
+        for i in range(blocks):
+            block = self.addLastBlock(buff[k:k+s], lastblock)
+            lastblock = self.encryptBlock(block,key)
+            result.extend(lastblock)
+            k += s
+        return result
+        
+    def decryptCBC(self, buff, key, iv):
+        s = 16
+        blocks = len(buff) // s
+        result = bytearray()
+        k = 0
+        lastblock = iv
+        for i in range(blocks):
+            block = buff[k:k+s]
+            decryptblock = self.decryptBlock(block,key)
+            result.extend(self.addLastBlock(decryptblock, lastblock))
+            lastblock = block
             k += s
         return result
  
