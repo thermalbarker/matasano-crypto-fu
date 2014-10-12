@@ -1,10 +1,20 @@
-from blackbox import blackbox
 from collections import OrderedDict
+from aes import aes
+import random
 
 class webprofiler(blackbox):
 
     def __init__(self):
         self.uid = 10
+        self.mAes = aes()
+        random.seed()
+        self.ecbKey = self.randomBytes(aes.blockSize)
+
+    def randomBytes(self, length):
+        key = bytearray(length)
+        for i in range(0, length):
+            key[i] = random.randrange(aes.blockSize)
+        return key
 
     def parseWebString(self, string):
         result = OrderedDict()
@@ -28,9 +38,20 @@ class webprofiler(blackbox):
             result += keyforstring + "=" + valueforstring
         return result
 
-    def profile_for(self, email):
+    def profile_for_clear(self, email):
         d = OrderedDict()
         d['email'] = str(email)
         d['uid'] = str(self.uid)
         d['role'] = 'user'
         return self.makeWebString(d)
+
+    def profile_for(self, email):
+        encrypted = cryptobuffer()
+        clear = self.profile_for_clear(email)
+        encrypted.fromString(clear)
+        encrypted.padPks7Block(aes.blockSize)
+        return self.mAes.encryptECB(plaintext, self.ecbKey)
+
+    def extract_profile(self, cyphertext):
+        clear = self.mAes.decryptECB(cyphertext, self.ecbKey)
+        return self.parseWebString(clear)
