@@ -1,8 +1,9 @@
 from collections import OrderedDict
 from aes import aes
+from cryptobuffer import cryptobuffer
 import random
 
-class webprofiler(blackbox):
+class webprofiler(object):
 
     def __init__(self):
         self.uid = 10
@@ -50,8 +51,10 @@ class webprofiler(blackbox):
         clear = self.profile_for_clear(email)
         encrypted.fromString(clear)
         encrypted.padPks7Block(aes.blockSize)
-        return self.mAes.encryptECB(plaintext, self.ecbKey)
+        return self.mAes.encryptECB(encrypted.mBytes, self.ecbKey)
 
     def extract_profile(self, cyphertext):
-        clear = self.mAes.decryptECB(cyphertext, self.ecbKey)
-        return self.parseWebString(clear)
+        clear = cryptobuffer()
+        clear.mBytes = self.mAes.decryptECB(cyphertext, self.ecbKey)
+        clear.stripPks7Padding()
+        return self.parseWebString(clear.toString())

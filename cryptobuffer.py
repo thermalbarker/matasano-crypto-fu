@@ -6,7 +6,7 @@ class cryptobuffer(bytearray):
 
     def __init__(self):
         self.mBytes = self
-    
+
     def fromHex(self, text):
         text = text.strip()
         text.replace(" ", "")
@@ -15,6 +15,16 @@ class cryptobuffer(bytearray):
     def toHex(self):
         return binascii.hexlify(self.mBytes)
     
+    def toHexBlocks(self, blocksize):
+        s = self.toHex()
+        o = ""
+        blocksize *= 2 # Two hex chars = 1 byte
+        for i in range(0, len(s)):
+            o += s[i]
+            if (((i+1) % blocksize) == 0) and (i != (len(s) - 1)):
+                o += " "
+        return o
+
     def toBase64(self):
         return base64.b64encode(self.toString())
 
@@ -83,3 +93,15 @@ class cryptobuffer(bytearray):
         result = cryptobuffer()
         blocks = int(math.ceil(float(len(self.mBytes)) / float(blocksize)))
         self.padPks7(blocks * blocksize)
+        
+    def isPks7Padded(self):
+        pad = self.mBytes[-1]
+        for byte in self.mBytes[-pad:-1]:
+            if (byte != pad):
+                return False
+        return True
+        
+    def stripPks7Padding(self):
+        if (self.isPks7Padded()):
+            pad = self.mBytes[-1]
+            self.mBytes = self.mBytes[:-pad]
