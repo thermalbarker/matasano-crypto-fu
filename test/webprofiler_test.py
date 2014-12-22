@@ -44,5 +44,11 @@ class webprofiler_test(unittest.TestCase):
                                      self.web.search_for_admin)
         self.assertTrue(s)
 
+    def test_cbc_padding_oracle(self):
+        s = self.cracker.cbc_padding_attack(
+            "data/17.txt",
+            self.web.random_secret,
+            self.web.cbc_padding_oracle)
+
 if __name__ == '__main__':
     unittest.main()

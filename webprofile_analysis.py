@@ -106,3 +106,37 @@ class webprofile_analysis(object):
         print "Decrpyted contains admin? ", isAdmin
 
         return isAdmin
+
+    def cbc_padding_attack(self, filename, encrypt, ispadded):
+        cypher = cryptobuffer()
+        previous = cryptobuffer()
+        iv = cryptobuffer()
+
+        print "\n---------------------------------"
+        print "CBC Padding Oracle Attack!"
+        print "---------------------------------"
+
+        iv_and_cypher = encrypt(filename)
+        iv.mBytes = iv_and_cypher[0]
+        cypher.mBytes = iv_and_cypher[1]
+        
+        print "Original Cypher text:"
+        print cypher.toHexBlocks(aes.blockSize)
+        padOk = ispadded(cypher.mBytes)
+        print "padding valid: ", padOk
+        
+        previous = iv
+
+        for j in range(0, 16):
+            cypherhack = cryptobuffer()
+            # Take the first block of the cypher        
+            cypherhack.mBytes[0:16]  = "\xaa" * 16
+            cypherhack.mBytes[16:32] = cypher.mBytes[0:16]
+
+            for i in range(0, 256):
+                cypherhack.mBytes[15-j] = i
+                padOk = ispadded(cypherhack.mBytes)
+                print cypherhack.toHexBlocks(aes.blockSize)
+                print "padding valid: ", padOk, " byte: ", j, " value: ", i
+                if (padOk):
+                    break

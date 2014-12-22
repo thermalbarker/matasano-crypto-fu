@@ -1,11 +1,13 @@
 import base64
 import binascii
 import math
+import random
 
 class cryptobuffer(bytearray):
 
     def __init__(self):
         self.mBytes = self
+        random.seed()
 
     def fromHex(self, text):
         text = text.strip()
@@ -47,6 +49,12 @@ class cryptobuffer(bytearray):
             bufferline = cryptobuffer()
             bufferline.fromBase64(line.strip())
             self.mBytes.extend(bufferline.mBytes)
+        infile.close()
+
+    def fromRandomLineInBase64File(self, filename):
+        infile = open(filename, "r")
+        lines = infile.readlines()
+        self.fromBase64(lines[random.randrange(len(lines))])
         infile.close()
 
     def singlecharxor(self, char):

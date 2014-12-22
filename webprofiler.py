@@ -85,4 +85,16 @@ class webprofiler(object):
         except:
             admin = False
         return admin
-        
+
+    def random_secret(self, secrets_file):
+        secret = cryptobuffer()
+        secret.fromRandomLineInBase64File(secrets_file)
+        secret.padPks7Block(aes.blockSize)
+        secret.mBytes = self.mAes.encryptCBC(secret.mBytes, self.aesKey, self.iv.mBytes)
+        return self.iv.mBytes, secret.mBytes
+
+    def cbc_padding_oracle(self, cyphertext):
+        clear = cryptobuffer()
+        clear.mBytes = self.mAes.decryptCBC(cyphertext, self. aesKey, self.iv.mBytes)
+#        print clear.toHexBlocks(aes.blockSize)
+        return clear.isPks7Padded()
