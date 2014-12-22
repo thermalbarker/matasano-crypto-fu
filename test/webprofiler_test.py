@@ -34,10 +34,15 @@ class webprofiler_test(unittest.TestCase):
         self.assertEqual('10',   c['uid'])
         self.assertEqual('user',  c['role'])        
  
-    def test_analysis(self):
+    def test_cut_and_paste(self):
         s = self.cracker.cut_and_paste(self.web.profile_for)
         c = self.web.extract_profile(s)
         self.assertEqual('admin',  c['role'])
+
+    def test_cbc_bitflip_attack(self):
+        s = self.cracker.cbc_bitflip(self.web.cooking_user_bacon,
+                                     self.web.search_for_admin)
+
 
 if __name__ == '__main__':
     unittest.main()

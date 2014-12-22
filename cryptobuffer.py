@@ -22,7 +22,8 @@ class cryptobuffer(bytearray):
         for i in range(0, len(s)):
             o += s[i]
             if (((i+1) % blocksize) == 0) and (i != (len(s) - 1)):
-                o += " "
+                o += "\n"
+        o += "\n"
         return o
 
     def toBase64(self):
@@ -67,6 +68,11 @@ class cryptobuffer(bytearray):
                 j += 1
             result.mBytes = b
         return result
+
+    def flipBit(self, bit):
+        byte = bit / 8
+        bitinbyte = 7 - (bit % 8)
+        self.mBytes[byte] ^= (1 << bitinbyte)
 
     def bitCount(self):
         bitsOne = 0

@@ -5,11 +5,14 @@ import random
 
 class webprofiler(object):
 
+
     def __init__(self):
         self.uid = 10
         self.mAes = aes()
         random.seed()
-        self.ecbKey = self.randomBytes(aes.blockSize)
+        self.aesKey = self.randomBytes(aes.blockSize)
+        self.iv = cryptobuffer()
+        self.iv.fromHex("00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00")
 
     def randomBytes(self, length):
         key = bytearray(length)
@@ -33,7 +36,7 @@ class webprofiler(object):
             if not first:
                 result += "&"
             first = False
-           # eat = and &
+            # eat = and & to stop basic hacks
             keyforstring = key.translate(None, '=&')
             valueforstring = dic[key].translate(None, '=&')
             result += keyforstring + "=" + valueforstring
@@ -51,10 +54,34 @@ class webprofiler(object):
         clear = self.profile_for_clear(email)
         encrypted.fromString(clear)
         encrypted.padPks7Block(aes.blockSize)
-        return self.mAes.encryptECB(encrypted.mBytes, self.ecbKey)
+        return self.mAes.encryptECB(encrypted.mBytes, self.aesKey)
 
     def extract_profile(self, cyphertext):
         clear = cryptobuffer()
-        clear.mBytes = self.mAes.decryptECB(cyphertext, self.ecbKey)
+        clear.mBytes = self.mAes.decryptECB(cyphertext, self.aesKey)
         clear.stripPks7Padding()
         return self.parseWebString(clear.toString())
+
+    def cooking_user_bacon(self, userstring):
+        encrypted = cryptobuffer()
+        d = OrderedDict()
+        d['comment1'] = "cooking MCs"
+        d['userdata'] = userstring
+        d['comment2'] = "like a pound of bacon"
+        encrypted.fromString(self.makeWebString(d))
+        encrypted.padPks7Block(aes.blockSize)
+        return self.mAes.encryptCBC(encrypted.mBytes, self.aesKey, self.iv.mBytes)
+
+    def search_for_admin(self, cyphertext):
+        admin = False
+        clear = cryptobuffer()
+        clear.mBytes = self.mAes.decryptCBC(cyphertext, self.aesKey, self.iv.mBytes)
+        clear.stripPks7Padding()
+        try:
+            d = self.parseWebString(clear.toString())
+            if ('admin' in d.keys()):
+                admin = True
+        except:
+            admin = False
+        return admin
+        
