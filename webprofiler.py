@@ -76,10 +76,11 @@ class webprofiler(object):
         admin = False
         clear = cryptobuffer()
         clear.mBytes = self.mAes.decryptCBC(cyphertext, self.aesKey, self.iv.mBytes)
-        clear.stripPks7Padding()
         try:
+            if not clear.stripPks7Padding():
+                throw
             d = self.parseWebString(clear.toString())
-            if ('admin' in d.keys()):
+            if (d['admin'] == 'true'):
                 admin = True
         except:
             admin = False

@@ -42,7 +42,7 @@ class webprofiler_test(unittest.TestCase):
     def test_cbc_bitflip_attack(self):
         s = self.cracker.cbc_bitflip(self.web.cooking_user_bacon,
                                      self.web.search_for_admin)
-
+        self.assertTrue(s)
 
 if __name__ == '__main__':
     unittest.main()

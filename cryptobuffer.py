@@ -111,3 +111,6 @@ class cryptobuffer(bytearray):
         if (self.isPks7Padded()):
             pad = self.mBytes[-1]
             self.mBytes = self.mBytes[:-pad]
+            return True
+        else:
+            return False
