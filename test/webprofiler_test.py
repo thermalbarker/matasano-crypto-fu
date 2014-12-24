@@ -1,6 +1,7 @@
 import unittest
 from webprofiler import webprofiler
 from webprofile_analysis import webprofile_analysis
+from cryptobuffer import cryptobuffer
 
 class webprofiler_test(unittest.TestCase):
 
@@ -45,10 +46,19 @@ class webprofiler_test(unittest.TestCase):
         self.assertTrue(s)
 
     def test_cbc_padding_oracle(self):
-        s = self.cracker.cbc_padding_attack(
-            "data/17.txt",
-            self.web.random_secret,
+        plain = cryptobuffer()
+        plain.fromRandomLineInBase64File("data/17.txt")
+        iv_and_secret = self.web.random_secret(plain.toString())
+        
+        result = cryptobuffer()
+        result.mBytes = self.cracker.cbc_padding_attack(
+            iv_and_secret[0], iv_and_secret[1],
             self.web.cbc_padding_oracle)
+
+        print "The secret string is: "
+        print plain.toString()
+
+        self.assertEquals(plain.toString(), result.toString())
 
 if __name__ == '__main__':
     unittest.main()

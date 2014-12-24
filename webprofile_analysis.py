@@ -107,36 +107,78 @@ class webprofile_analysis(object):
 
         return isAdmin
 
-    def cbc_padding_attack(self, filename, encrypt, ispadded):
+    def cbc_padding_attack(self, ivBytes, encryptedBytes, ispadded):
         cypher = cryptobuffer()
         previous = cryptobuffer()
         iv = cryptobuffer()
+        plain = cryptobuffer()
 
         print "\n---------------------------------"
         print "CBC Padding Oracle Attack!"
         print "---------------------------------"
 
-        iv_and_cypher = encrypt(filename)
-        iv.mBytes = iv_and_cypher[0]
-        cypher.mBytes = iv_and_cypher[1]
+        iv.mBytes = ivBytes
+        cypher.mBytes = encryptedBytes
         
         print "Original Cypher text:"
         print cypher.toHexBlocks(aes.blockSize)
         padOk = ispadded(cypher.mBytes)
         print "padding valid: ", padOk
         
+        nBlocks = len(cypher.mBytes) / aes.blockSize
         previous = iv
 
-        for j in range(0, 16):
-            cypherhack = cryptobuffer()
-            # Take the first block of the cypher        
-            cypherhack.mBytes[0:16]  = "\xaa" * 16
-            cypherhack.mBytes[16:32] = cypher.mBytes[0:16]
+        for b in range(0, nBlocks):
+            b1 = b  * aes.blockSize
+            b2 = b1 + aes.blockSize
 
-            for i in range(0, 256):
-                cypherhack.mBytes[15-j] = i
-                padOk = ispadded(cypherhack.mBytes)
-                print cypherhack.toHexBlocks(aes.blockSize)
-                print "padding valid: ", padOk, " byte: ", j, " value: ", i
+            # P2 = B1 ^ I2
+            # Valid padding when:
+            # P2[16] = 1, loop over to find B1[16] -> can infer I2[16]
+            P2 = cryptobuffer()
+            I2 = cryptobuffer()
+            I2.mBytes[0:16] = "\x00" * 16
+            B1 = cryptobuffer()
+            B1.mBytes[0:16] = "\xaa" * 16
+            B2 = cryptobuffer()
+            B2.mBytes[0:16] = cypher.mBytes[b1:b2]
+
+            for j in range(0, 16):
+                padOk = False
+                padValue = '\x00'
+                for i in range(0, 256):
+                    cypherhack = cryptobuffer()
+                    cypherhack.mBytes[0:16]  = B1.mBytes
+                    cypherhack.mBytes[16:32] = B2.mBytes
+                    cypherhack.mBytes[15-j] = i
+                    padOk = ispadded(cypherhack.mBytes)
+                    if (padOk):
+                        padValue = i
+                        break
                 if (padOk):
+                    # We have found a valid padding bit, value i
+                    print "Byte: ", j, " padding valid: ", padOk, " value: ", i
+                    # Infer the intermediate state, as we know the padding
+                    I2.mBytes[15-j] = padValue ^ (j + 1)
+                    print "Intermediate vector:"
+                    print I2.toHexBlocks(aes.blockSize)
+                    # Infer the plaintext for intermediate state and iv
+                    P2 = I2.xor(previous)
+                    print "Plaintext block:", P2.toString()
+                    print P2.toHexBlocks(aes.blockSize)
+                    # Now set B1 for the next byte(s)
+                    for k in range(15-j, 16):
+                        B1.mBytes[k] = I2[k] ^ (j + 2)
+                else:
+                    print "Padding unknown!"
                     break
+            plain.mBytes[b1:b2] = P2.mBytes
+            previous = B2
+
+        plain.stripPks7Padding()
+        print "Decrypted message:"
+        print plain.toHexBlocks(aes.blockSize)
+        print plain.toString()
+        
+        return plain.mBytes
+

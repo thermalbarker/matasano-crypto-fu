@@ -86,9 +86,9 @@ class webprofiler(object):
             admin = False
         return admin
 
-    def random_secret(self, secrets_file):
+    def random_secret(self, plain):
         secret = cryptobuffer()
-        secret.fromRandomLineInBase64File(secrets_file)
+        secret.fromString(plain)
         secret.padPks7Block(aes.blockSize)
         secret.mBytes = self.mAes.encryptCBC(secret.mBytes, self.aesKey, self.iv.mBytes)
         return self.iv.mBytes, secret.mBytes
