@@ -157,15 +157,13 @@ class webprofile_analysis(object):
                         break
                 if (padOk):
                     # We have found a valid padding bit, value i
-                    print "Byte: ", j, " padding valid: ", padOk, " value: ", i
+                    print "Block: ", b, " Byte: ", j, " padding valid: ", padOk, " value: ", i
                     # Infer the intermediate state, as we know the padding
                     I2.mBytes[15-j] = padValue ^ (j + 1)
-                    print "Intermediate vector:"
-                    print I2.toHexBlocks(aes.blockSize)
                     # Infer the plaintext for intermediate state and iv
                     P2 = I2.xor(previous)
-                    print "Plaintext block:", P2.toString()
-                    print P2.toHexBlocks(aes.blockSize)
+                    print "IV:  ", I2.toHex()
+                    print "txt: ", P2.toHex()
                     # Now set B1 for the next byte(s)
                     for k in range(15-j, 16):
                         B1.mBytes[k] = I2[k] ^ (j + 2)

@@ -1,38 +1,20 @@
-import math
+import math, string
 
 class frequency(object):
 
+    unknown = 'other'
+
     def __init__(self):
-        self.freq = {
-            'a' : 0,
-            'b' : 0,
-            'c' : 0,
-            'd' : 0,
-            'e' : 0,
-            'f' : 0,
-            'g' : 0,
-            'h' : 0,
-            'i' : 0,
-            'j' : 0,
-            'k' : 0,
-            'l' : 0,
-            'm' : 0,
-            'n' : 0,
-            'o' : 0,
-            'p' : 0,
-            'q' : 0,
-            'r' : 0,
-            's' : 0,
-            't' : 0,
-            'u' : 0,
-            'v' : 0,
-            'w' : 0,
-            'x' : 0,
-            'y' : 0,
-            'z' : 0,
-            ' ' : 0,
-            'other': 0
-            }
+        self.freq = dict()
+        for c in string.printable:
+            self.freq[c] = 0
+        self.freq[self.unknown] = 0
+
+    def __str__(self):
+        s = str()
+        for c in self.freq:
+            s += c + ': ' + str(self.freq[c]) + '\n'
+        return s
 
     def addText(self, text):
         # Remove multiple spaces
@@ -41,8 +23,10 @@ class frequency(object):
         for c in text.lower():
             if c in self.freq:
                 self.freq[c] += 1
+            elif self.unknown in self.freq:
+                self.freq[self.unknown] += 1
             else:
-                self.freq['other'] += 1
+                self.freq[self.unknown] = 1
         self.normalise()
 
     def normalise(self):
@@ -53,15 +37,14 @@ class frequency(object):
     def compare(self, other):
         chisq = 0
         for k in self.freq:
-            diff = self.freq[k] - other.freq[k]
+            if k in other.freq:
+                o = other.freq[k]
+            else:
+                o = 0
+            diff = self.freq[k] - o
             chisq = chisq + diff * diff
         chisq = math.sqrt(chisq) / len(self.freq)
         return chisq
-
-    def engchisq(self):
-        english = englishfrequency()
-        return self.compare(english)
-    
 
 class englishfrequency(frequency):
 
@@ -95,6 +78,21 @@ class englishfrequency(frequency):
             'y' : 1.974,
             'z' : 0.074,
             ' ': 20.8768,
-            'other' : 0
+            self.unknown : 0
             }
         self.normalise()
+
+# Use an input file to train the frequency
+class filefrequency(frequency):
+
+    def __init__(self, filename):
+        super(frequency, self).__init__()
+        self.freq = dict()
+        infile = open(filename, "r")
+        for line in infile:
+            for c in line:
+                if c not in self.freq:
+                    self.freq[c] = 0
+                self.freq[c] += 1
+        self.normalise()
+        infile.close()

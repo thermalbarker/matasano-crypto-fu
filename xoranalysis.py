@@ -4,7 +4,12 @@ import string
 
 class xor(object):
 
-    
+    def __init__(self, ref_freq = None):
+        if ref_freq is None:
+            self.ref_freq = frequencyanalyser.englishfrequency()
+        else:
+            self.ref_freq = ref_freq
+
     def crackhex(self, cypherhex):
         buff = cryptobuffer()
         buff.fromHex(cypherhex)
@@ -13,11 +18,13 @@ class xor(object):
     def crack_singlechar_xor(self, buff):
         results = list()
         # Encrypted with a single character XOR
-        for c in string.printable:
+        # does not have to be just the printable letters
+        for i in range(0, 255):
+            c = chr(i)
             charbuff = buff.singlecharxor(c)
             f = frequencyanalyser.frequency()
             f.addText(charbuff.toString())
-            chisq = f.engchisq()
+            chisq = f.compare(self.ref_freq)
             result = (c, chisq, charbuff)
             results.append(result)
         return sorted(results, key=lambda tup: tup[1])
@@ -114,7 +121,11 @@ class xor(object):
             key = cryptobuffer()
             for buff_slice in sliced_buffs:
                 slice_results = self.crack_singlechar_xor(buff_slice)
+                #print "Slice:"
+                #if buff_slice is sliced_buffs[0]:
+                #    for r in slice_results:
+                #        print  r[0], '{:06}'.format(r[1]), r[2].toPrintable()
                 key.mBytes.append(slice_results[0][0])
-            print "Key[", key_tries, "] = ", key.toString()
+            print "Key[", key_tries, "] = ", key.toBase64()
             results.append(key)
         return results

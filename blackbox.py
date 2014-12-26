@@ -9,8 +9,9 @@ class blackbox(object):
         self.mAes = aes()
         random.seed()
         self.algo = random.choice(list(AesBlockmode))
-        self.ecbKey = self.randomBytes(aes.blockSize)
+        self.key = self.randomBytes(aes.blockSize)
         self.aesEcbUnknown = bytearray()
+        self.nonce = "\x00" * 8
 
     def randomBytes(self, length):
         key = bytearray(length)
@@ -20,13 +21,16 @@ class blackbox(object):
 
     def encryptAesOrEcb(self, buff):
         result = bytearray()
-        key = self.randomBytes(aes.blockSize)
+        #key = self.randomBytes(aes.blockSize)
         if (self.algo == AesBlockmode.ECB):
-            result = self.mAes.encryptECB(buff, key)
+            result = self.mAes.encryptECB(buff, self.key)
         else:
             iv = self.randomBytes(aes.blockSize)
-            result = self.mAes.encryptCBC(buff, key, iv)
+            result = self.mAes.encryptCBC(buff, self.key, iv)
         return result
+
+    def encryptCtr(self, buff):
+        return self.mAes.encryptCTR(buff, self.key, self.nonce)
 
     def addRandomBytes(self, buff):
         result = self.randomBytes(random.randint(5,10))
@@ -44,4 +48,18 @@ class blackbox(object):
         plaintext.mBytes.extend(buff)
         plaintext.mBytes.extend(self.aesEcbUnknown)
         plaintext.padPks7Block(aes.blockSize)
-        return self.mAes.encryptECB(plaintext, self.ecbKey)
+        return self.mAes.encryptECB(plaintext, self.key)
+
+    def encryptCtrLinesFromFile(self, filename):
+        encrypted = []
+        plain = []
+        infile = open(filename, "r")
+        for line in infile:
+            bufferline = cryptobuffer()
+            bufferline.fromBase64(line.strip())
+            cyphertext = self.encryptCtr(bufferline.mBytes)
+            encrypted.append(cyphertext)
+            plain.append(bufferline.mBytes)
+        infile.close()
+        return (plain, encrypted)
+

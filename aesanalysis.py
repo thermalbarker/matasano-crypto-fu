@@ -1,13 +1,17 @@
+import sys
 from aes import aes, AesBlockmode
 from xoranalysis import xor
 from cryptobuffer import cryptobuffer
+from frequencyanalyser import englishfrequency, filefrequency
 
 class aesanalysis(object):
 
     padbyte = 0xAA
 
     def __init__(self):
-        self.xor = xor()
+        self.freq = englishfrequency()
+        #self.freq = filefrequency("data/vanilla.txt")
+        self.xor = xor(self.freq)
         self.aes = aes()
     
     def detectAesEcb(self, testfile):
@@ -105,7 +109,7 @@ class aesanalysis(object):
             try:
                 byte = myList.index(cypher.mBytes)
             except ValueError:
-                print "Could not found encrypted block ==> finished"
+                print "Could not find encrypted block ==> finished"
                 break
 
             decrypted.mBytes.append(byte)
@@ -128,3 +132,34 @@ class aesanalysis(object):
         # For some reason, always an additional byte, so delete it:
         del(result[-1])
         return result
+
+    
+    def decryptCtrFixedNonce(self, cypherTexts):
+        plainTexts = []
+        truncatedTexts = []
+        cat = cryptobuffer()
+        P2 = cryptobuffer()
+
+        print "Breaking Fixed-Nonce CTR"
+
+        # Find smallest line length
+        mini = sys.maxint
+        for cypherText in cypherTexts:
+            mini = int(min(mini, len(cypherText)))
+        print "Minimum cyphertext length: ", mini
+        # Truncate to smallest length and pack
+        for cypherText in cypherTexts:
+            truncated = cypherText[0:mini]
+            truncatedTexts.append(truncated)
+            cat.mBytes.extend(truncated)
+            
+        # Use xor analysis to crack
+        P2s = self.xor.crack_xor(cat, 1, mini)
+        for t in truncatedTexts:
+            tBuff = cryptobuffer()
+            tBuff.mBytes = t
+            plain = tBuff.xor(P2s[0])
+            print plain.toPrintable()
+            plainTexts.append(plain)
+    
+        return plainTexts

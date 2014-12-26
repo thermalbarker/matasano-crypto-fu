@@ -2,6 +2,7 @@ import base64
 import binascii
 import math
 import random
+import string
 
 class cryptobuffer(bytearray):
 
@@ -41,6 +42,15 @@ class cryptobuffer(bytearray):
 
     def toString(self):
         return str(self.mBytes)
+
+    def toPrintable(self):
+        s = ''
+        for b in self.mBytes:
+            if chr(b) in string.printable:
+                s += chr(b)
+            else:
+                s += "?"
+        return s
 
     def fromBase64File(self, filename):
         infile = open(filename, "r")
