@@ -1,10 +1,12 @@
 from enum import Enum, unique
 import math
+import struct
 
 @unique
 class AesBlockmode(Enum):
     ECB = 0
     CBC = 1
+    CTR = 2
 
 class aes(object):
 
@@ -305,7 +307,8 @@ class aes(object):
 
     def addLastBlock(self, block, iv):
         result = bytearray()
-        for i in range(0, len(block)):
+        # Do an XOR of the smallest length
+        for i in range(0, min(len(block), len(iv))):
             result.append( block[i] ^ iv[i] )
         return result
 
@@ -336,3 +339,28 @@ class aes(object):
             k += s
         return result
  
+    def encryptCTR(self, buff, key, nonce):
+        s = self.blockSize
+        # Here we can round up
+        blocks = int(math.ceil(float(len(buff)) / float(s)))
+        result = bytearray()
+        k = 0
+        
+        for i in range(blocks):
+            block = bytearray(16)
+            # convert counter into 64-bit counter
+            ctr = bytearray(struct.pack("!Q", i))
+            ctr.reverse() # Convert to little endian
+            block[0:8]  = nonce
+            block[8:16] = ctr
+            # Encrypt the counter + nonce
+            block = self.encryptBlock(block, key)
+            # XOR with the plaintext
+            block = self.addLastBlock(buff[k:k+s], block)
+            result.extend(block)
+            k += s
+        return result
+
+    def decryptCTR(self, buff, key, nonce):
+        # Encryption and decryption are the same!
+        return self.encryptCTR(buff, key, nonce)

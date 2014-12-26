@@ -93,6 +93,21 @@ class aes_test(unittest.TestCase):
         print self.buff.toString()
         cypher2.mBytes = self.myAes.encryptCBC(self.buff.mBytes, self.key.mBytes, iv.mBytes)
         self.assertEqual(self.cypher.toHex(), cypher2.toHex())
+
+    def test_ctrDecrypt(self):
+        print
+        print "CTR Decryption"
+        cypher2 = cryptobuffer()
+        nonce  = cryptobuffer()
+        filename = "data/18.txt"
+        self.key.fromString("YELLOW SUBMARINE")
+        nonce.fromHex("00 00 00 00 00 00 00 00")
+        print "Key:  ", self.key.toHex()
+        self.cypher.fromBase64File(filename)
+        self.buff.mBytes = self.myAes.decryptCTR(self.cypher.mBytes, self.key.mBytes, nonce.mBytes)
+        print self.buff.toString()
+        cypher2.mBytes = self.myAes.encryptCTR(self.buff.mBytes, self.key.mBytes, nonce.mBytes)
+        self.assertEqual(self.cypher.toHex(), cypher2.toHex())
         
 
 if __name__ == '__main__':
