@@ -32,7 +32,7 @@ class aesanalysis_test(unittest.TestCase):
                 correct += 1
         self.assertEqual(tries, correct)
 
-    def notest_decryptaesecb(self):
+    def test_decryptaesecb(self):
         print
         # Set up the black box with a plain text
         box = blackbox()
