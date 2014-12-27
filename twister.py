@@ -1,4 +1,3 @@
-import time
 
 # From wikipedia http://en.wikipedia.org/wiki/Mersenne_twister
 class twister():
@@ -21,21 +20,22 @@ class twister():
 
     index = 0
 
+    seed = 0
+
     def __init__(self):
         self.mt = [0] * self.n
         self.index  = 0
-        self.seed()
+        self.set_seed()
 
     # Initilise the generator with a seed
     # default as used by MT creators
-    def seed(self, seed = 5489):
+    def set_seed(self, seed = 5489):
         self.index = 0
-        self.mt[0] = seed & self.mask1
+        self.seed = seed & self.mask1
+        self.mt[0] = self.seed
         for i in range(1, self.n):
             self.mt[i] = (self.k * (self.mt[i-1] ^ (self.mt[i-1] >> 30)) + i)
             self.mt[i] &= self.mask1
-    def seed_time(self):
-        self.seed( int(time.time()) )
 
     # Generate array of 624 untempered numbers
     def generate_numbers(self):
