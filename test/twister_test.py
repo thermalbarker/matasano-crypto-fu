@@ -56,9 +56,6 @@ class twister_test(unittest.TestCase):
         y = self.t.rand()
         r = y ^ (y >> self.t.u)
         y2 = self.a.unrightshift(r, self.t.u)
-        print 'y =        ', '{0:32b}'.format(y)
-        print 'r =        ', '{0:32b}'.format(r)
-        print 'y2 =       ', '{0:32b}'.format(y2)
         self.assertEquals(y, y2)
 
     def test_unrightshift_l(self):
@@ -66,9 +63,6 @@ class twister_test(unittest.TestCase):
         y = self.t.rand()
         r = y ^ (y >> self.t.l)
         y2 = self.a.unrightshift(r, self.t.l)
-        print 'y =        ', '{0:32b}'.format(y)
-        print 'r =        ', '{0:32b}'.format(r)
-        print 'y2 =       ', '{0:32b}'.format(y2)
         self.assertEquals(y, y2)
 
     def test_unleftshift_sb(self):
@@ -76,14 +70,6 @@ class twister_test(unittest.TestCase):
         y = self.t.rand()
         r = y ^ ((y << self.t.s) & self.t.b)
         y2 = self.a.unleftshift(r, self.t.s, self.t.b)
-        print
-        print 'y =        ', '{0:32b}'.format(y)
-        print 'y << 15    ', '{0:32b}'.format((y << self.t.s) & 0xFFFFFFFF)
-        print 'c          ', '{0:32b}'.format(self.t.b)
-        print 'not c      ', '{0:32b}'.format(~self.t.b & 0xFFFFFFFF)
-        print 'y << 15 & c', '{0:32b}'.format((y << self.t.s) & self.t.b)
-        print 'r          ', '{0:32b}'.format(r)
-        print 'y2         ', '{0:32b}'.format(y2)
         self.assertEquals(y, y2)
 
     def test_unleftshift_tc(self):
@@ -100,6 +86,12 @@ class twister_test(unittest.TestCase):
         print
         print "x: ", x, "y: ", y, "mt[0]: ", self.t.mt[0]
         self.assertEquals(x, self.t.mt[0])
+
+    def test_clone(self):
+        self.t.set_seed(int(time.time()))
+        clone = self.a.clone(self.t)
+        for i in range(0, 1000):
+            self.assertEquals(self.t.rand(), clone.rand())
 
 if __name__ == '__main__':
     unittest.main()

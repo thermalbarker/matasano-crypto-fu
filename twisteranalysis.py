@@ -3,6 +3,8 @@ import time
 
 class twisteranalysis:
 
+    allbits = 0xFFFFFFFF
+
     def crack_seed(self, func):
         r = func()
         print "Random number: ", r
@@ -20,6 +22,17 @@ class twisteranalysis:
 
         return seed
 
+    def clone(self, mt):
+        clone = twister()
+        a = [0] * mt.n
+        # Untemper each number in the sequence
+        for i in range(0, mt.n):
+            y = mt.rand()
+            a[i] = self.untemper(y)
+        # Graft the states onto the clone
+        clone.mt = a
+        return clone
+
     def untemper(self, y):
         mt = twister()
         x = y & 0xFFFFFFFF
@@ -30,19 +43,33 @@ class twisteranalysis:
         return x
     
     def unrightshift(self, y, shift):
-        # And the 'shift' bits 0, upper bits 1
-        upper = (0xFFFFFFFF << (32 - shift)) & 0xFFFFFFFF
-        lower = (0xFFFFFFFF >> shift) & 0xFFFFFFFF
-        print '\nupper      ', '{0:32b}'.format(upper)
-        print 'lower      ', '{0:32b}'.format(lower)
-        return (y & upper) | (((y >> shift) ^ y) & lower)
+        i = 0
+        result = 0
+        while i * shift < 32:
+            # Create a mask for this part
+            partMask = ((self.allbits << (32 - shift)) & self.allbits) >> (shift * i)
+            # Obtain the part
+            part = y & partMask
+            # Unapply the XOR operation from the integer
+            y ^= part >> shift
+            # Add to the result
+            result |= part
+            i += 1
+        return result
+            
                      
     def unleftshift(self, y, shift, mask):
-        m  = mask & 0xFFFFFFFF
-        nm =   ~m & 0xFFFFFFFF
-        upper =  0xFFFFFFFF << shift
-        lower = (0xFFFFFFFF >> (32 - shift)) & 0xFFFFFFFF
-        r = (((y << shift) & m) ^ y) & upper  | \
-             (y & upper & nm)                 | \
-             (y & lower)
-        return r
+        i = 0
+        result = 0
+        while i * shift < 32:
+            # Create a mask for this part
+            partMask = ((self.allbits >> (32 - shift)) & self.allbits) << (shift * i)
+            # Obtain the part
+            part = y & partMask
+            # Unapply the XOR operation from the integer
+            y ^= (part << shift) & mask
+            # Add to the result
+            result |= part
+            i += 1
+        return result
+
