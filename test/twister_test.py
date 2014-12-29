@@ -91,9 +91,54 @@ class twister_test(unittest.TestCase):
 
     def test_clone(self):
         self.t.set_seed(int(time.time()))
-        clone = self.a.clone(self.t)
+        rands = []
+        for i in range(0, self.t.n):
+            rands.append(self.t.rand())
+
+        clone = self.a.clone(rands)
         for i in range(0, 1000):
             self.assertEquals(self.t.rand(), clone.rand())
+
+    def test_rewind_block(self):
+        self.t.set_seed(123456)
+
+        oldmt = self.t.mt[:]
+        # Generate some numbers
+        n = 100
+        previous = []
+        for i in range(n):
+            previous.append( self.t.rand() )
+        # Rewind the internal state
+        clone = self.a.rewind_twister_block( self.t )
+        # The seed iteself (at zero) is never reproduced
+        self.assertSequenceEqual(clone.mt[1:], oldmt[1:])
+
+        clone.index = 0
+        cloned = []
+        # Regenerate the numbers
+        for i in range(n):
+            cloned.append( clone.rand() )
+
+        self.assertSequenceEqual(previous[1:], cloned[1:])
+
+    def test_rewind(self):
+        self.t.set_seed(123456)
+        # Advance the state a little
+        for i in range(1000):
+            self.t.rand()
+        # Now capture 1000 random numbers
+        n = 1000
+        previous = []
+        for i in range(n):
+            previous.append( self.t.rand() )
+     
+        clone = self.a.rewind_twister(self.t, n)
+        cloned = []
+        # Regenerate the numbers
+        for i in range(n):
+            cloned.append( clone.rand() )
+
+        self.assertSequenceEqual(previous, cloned)  
 
     def test_mt_cypher(self):
         key = cryptobuffer()
@@ -132,7 +177,6 @@ class twister_test(unittest.TestCase):
         pwd = 'AAAAAAAAAAAAAA'
         token = mt.password_token(pwd)
         self.assertFalse( self.a.is_mt_timeseeded(token, pwd) )
-
 
 if __name__ == '__main__':
     unittest.main()

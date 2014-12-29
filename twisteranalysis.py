@@ -1,7 +1,7 @@
 from twister import twister
 from cryptobuffer import cryptobuffer
 from mtcypher import mtcypher
-import time
+import time, copy, math
 
 class twisteranalysis:
 
@@ -23,16 +23,12 @@ class twisteranalysis:
                 print "Found seed: ", seed
                 break
         return seed
-
-    def clone(self, mt):
+    def clone(self, rands):
         clone = twister()
-        a = [0] * mt.n
         # Untemper each number in the sequence
-        for i in range(0, mt.n):
-            y = mt.rand()
-            a[i] = self.untemper(y)
-        # Graft the states onto the clone
-        clone.mt = a
+        for i in range(0, clone.n):
+            clone.mt[i] = self.untemper(rands[i])
+
         return clone
 
     def untemper(self, y):
@@ -75,6 +71,52 @@ class twisteranalysis:
             result |= part
             i += 1
         return result
+
+
+    # Rewind a twister by n
+    def rewind_twister(self, mt, n):
+        # How many time to rewind the internal state
+        blocks = abs((mt.index - n) // mt.n)
+        # The index within that state
+        bindex = (mt.index - n) % mt.n
+        clone = twister()
+        clone.mt = mt.mt[:]
+        clone.index = mt.index
+        if blocks:
+            for i in range(0, blocks):
+                clone = self.rewind_twister_block(clone)
+        clone.index = bindex
+        return clone
+
+    # Rewind the MT to the previous state
+    # https://jazzy.id.au/2010/09/25/cracking_random_number_generators_part_4.html
+    def rewind_twister_block(self, mt):
+        clone = twister()
+        clone.index = mt.index
+        clone.mt = mt.mt[:]
+        for i in reversed(range(clone.n)):
+            result = 0
+            # Calculate the first bit
+            tmp = clone.mt[i]
+            tmp ^=  clone.mt[ (i + clone.m) % clone.n ]
+            # if the first bit is odd, unapply magic
+            if ((tmp & clone.mask2) == clone.mask2):
+                tmp ^= clone.a
+            # the second bit of tmp is the first bit of the result
+            result = (tmp << 1) & clone.mask2
+
+            # work out the remaining 31 bits
+            tmp  = clone.mt[(i - 1 + clone.n) % clone.n];
+            tmp ^= clone.mt[(i - 1 + clone.m) % clone.n];
+            if ((tmp & clone.mask2) == clone.mask2):
+                tmp ^= clone.a
+                # since it was odd, the last bit must have been 1
+                result |= 1
+            # extract the final 30 bits
+            result |= (tmp << 1) & clone.mask3
+            clone.mt[i] = result
+
+        return clone
 
 
     def crack_oracle(self, token_in, pwd_in):
