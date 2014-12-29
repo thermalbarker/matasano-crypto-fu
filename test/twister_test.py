@@ -51,5 +51,55 @@ class twister_test(unittest.TestCase):
         s = self.a.crack_seed(self.firstValue)
         self.assertEquals(s, self.t.seed)
 
+    def test_unrightshift_u(self):
+        self.t.set_seed(int(time.time()))
+        y = self.t.rand()
+        r = y ^ (y >> self.t.u)
+        y2 = self.a.unrightshift(r, self.t.u)
+        print 'y =        ', '{0:32b}'.format(y)
+        print 'r =        ', '{0:32b}'.format(r)
+        print 'y2 =       ', '{0:32b}'.format(y2)
+        self.assertEquals(y, y2)
+
+    def test_unrightshift_l(self):
+        self.t.set_seed(int(time.time()))
+        y = self.t.rand()
+        r = y ^ (y >> self.t.l)
+        y2 = self.a.unrightshift(r, self.t.l)
+        print 'y =        ', '{0:32b}'.format(y)
+        print 'r =        ', '{0:32b}'.format(r)
+        print 'y2 =       ', '{0:32b}'.format(y2)
+        self.assertEquals(y, y2)
+
+    def test_unleftshift_sb(self):
+        self.t.set_seed(int(time.time()))
+        y = self.t.rand()
+        r = y ^ ((y << self.t.s) & self.t.b)
+        y2 = self.a.unleftshift(r, self.t.s, self.t.b)
+        print
+        print 'y =        ', '{0:32b}'.format(y)
+        print 'y << 15    ', '{0:32b}'.format((y << self.t.s) & 0xFFFFFFFF)
+        print 'c          ', '{0:32b}'.format(self.t.b)
+        print 'not c      ', '{0:32b}'.format(~self.t.b & 0xFFFFFFFF)
+        print 'y << 15 & c', '{0:32b}'.format((y << self.t.s) & self.t.b)
+        print 'r          ', '{0:32b}'.format(r)
+        print 'y2         ', '{0:32b}'.format(y2)
+        self.assertEquals(y, y2)
+
+    def test_unleftshift_tc(self):
+        self.t.set_seed(int(time.time()))
+        y = self.t.rand()
+        r = y ^ ((y << self.t.t) & self.t.c)
+        y2 = self.a.unleftshift(r, self.t.t, self.t.c)
+        self.assertEquals(y, y2)
+
+    def test_untemper(self):
+        self.t.set_seed(int(time.time()))
+        y = self.t.rand()
+        x = self.a.untemper(y)
+        print
+        print "x: ", x, "y: ", y, "mt[0]: ", self.t.mt[0]
+        self.assertEquals(x, self.t.mt[0])
+
 if __name__ == '__main__':
     unittest.main()

@@ -19,4 +19,30 @@ class twisteranalysis:
                 break
 
         return seed
+
+    def untemper(self, y):
+        mt = twister()
+        x = y & 0xFFFFFFFF
+        x = self.unrightshift(x, mt.l)
+        x = self.unleftshift(x, mt.t, mt.c)
+        x = self.unleftshift(x, mt.s, mt.b)
+        x = self.unrightshift(x, mt.u)
+        return x
+    
+    def unrightshift(self, y, shift):
+        # And the 'shift' bits 0, upper bits 1
+        upper = (0xFFFFFFFF << (32 - shift)) & 0xFFFFFFFF
+        lower = (0xFFFFFFFF >> shift) & 0xFFFFFFFF
+        print '\nupper      ', '{0:32b}'.format(upper)
+        print 'lower      ', '{0:32b}'.format(lower)
+        return (y & upper) | (((y >> shift) ^ y) & lower)
                      
+    def unleftshift(self, y, shift, mask):
+        m  = mask & 0xFFFFFFFF
+        nm =   ~m & 0xFFFFFFFF
+        upper =  0xFFFFFFFF << shift
+        lower = (0xFFFFFFFF >> (32 - shift)) & 0xFFFFFFFF
+        r = (((y << shift) & m) ^ y) & upper  | \
+             (y & upper & nm)                 | \
+             (y & lower)
+        return r
