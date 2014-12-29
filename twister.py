@@ -61,4 +61,3 @@ class twister():
         self.index = (self.index + 1) % self.n
 
         return y
-        

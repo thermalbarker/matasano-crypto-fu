@@ -30,6 +30,22 @@ class cryptobuffer_test(unittest.TestCase):
         self.buff.fromString(self.textmsg)
         self.assertEqual(self.base64msg, self.buff.toBase64())
 
+    def test_to_int(self):
+        self.buff.fromHex('ABCD')
+        self.assertEqual(self.buff.toInt(), 0xABCD)
+
+    def test_from_int(self):
+        self.buff.fromInt(0xABCD)
+        self.assertEqual(self.buff.toHex(), 'abcd')
+
+    def test_from_int_zero(self):
+        self.buff.fromInt(0x0)
+        self.assertEqual(self.buff.toHex(), '00')
+
+    def test_from_int_one(self):
+        self.buff.fromInt(0x1)
+        self.assertEqual(self.buff.toHex(), '01')
+
     def test_fixed_xor(self):
         self.buff.fromHex("1c0111001f010100061a024b53535009181c")
         xortarget = cryptobuffer()

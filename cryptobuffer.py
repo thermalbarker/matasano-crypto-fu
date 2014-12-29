@@ -3,6 +3,7 @@ import binascii
 import math
 import random
 import string
+import struct
 
 class cryptobuffer(bytearray):
 
@@ -28,6 +29,24 @@ class cryptobuffer(bytearray):
                 o += "\n"
         o += "\n"
         return o
+
+    # Assume big endian
+    def toInt(self):
+        return int(self.toHex(), 16)
+
+    # Assume big-endian
+    def fromInt(self, val):
+        width = val.bit_length()
+        # unhexlify wants an even multiple of eight (8) bits, but we don't
+        # want more digits than we need (hence the ternary-ish 'or')
+        width += 8 - ((width % 8) or 8)
+        # format width specifier: four (4) bits per hex digit
+        fmt = '%%0%dx' % (width // 4)
+        # prepend zero (0) to the width, to zero-pad the output
+        if (val == 0):
+            self.mBytes = '\x00'
+        else:
+            self.mBytes = binascii.unhexlify(fmt % val)
 
     def toBase64(self):
         return base64.b64encode(self.toString())
@@ -58,6 +77,15 @@ class cryptobuffer(bytearray):
         for line in infile:
             bufferline = cryptobuffer()
             bufferline.fromBase64(line.strip())
+            self.mBytes.extend(bufferline.mBytes)
+        infile.close()
+
+    def fromFile(self, filename):
+        infile = open(filename, "r")
+        self.mBytes = bytearray()
+        for line in infile:
+            bufferline = cryptobuffer()
+            bufferline.fromString(line)
             self.mBytes.extend(bufferline.mBytes)
         infile.close()
 

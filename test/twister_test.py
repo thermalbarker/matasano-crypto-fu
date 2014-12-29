@@ -2,6 +2,8 @@ import unittest
 import random, time
 from twister import twister
 from twisteranalysis import twisteranalysis
+from mtcypher import mtcypher
+from cryptobuffer import cryptobuffer
 
 class twister_test(unittest.TestCase):
 
@@ -92,6 +94,45 @@ class twister_test(unittest.TestCase):
         clone = self.a.clone(self.t)
         for i in range(0, 1000):
             self.assertEquals(self.t.rand(), clone.rand())
+
+    def test_mt_cypher(self):
+        key = cryptobuffer()
+        key.fromHex('1234')
+        mt = mtcypher(key.mBytes)
+        plain = cryptobuffer()
+        plain.fromFile('data/vanilla.txt')
+        encrypted = mt.encrypt(plain.mBytes)
+        enplained = mt.decrypt(encrypted)
+        self.assertEquals(plain.mBytes, enplained)
+
+    def test_crack_token(self):
+        key = cryptobuffer()
+        key.fromHex('1234')
+        mt = mtcypher(key.mBytes)
+        # Generate a token
+        pwd = 'AAAAAAAAAAAAAA'
+        token = mt.password_token(pwd)
+        # Brute force crack it
+        result = self.a.crack_oracle(token, pwd)
+
+        self.assertEquals(result, key.mBytes)
+
+    def test_mt_is_timeseeded_true(self):
+        mt = mtcypher()
+        # Generate a token
+        pwd = 'AAAAAAAAAAAAAA'
+        token = mt.password_token(pwd)
+        self.assertTrue( self.a.is_mt_timeseeded(token, pwd) )
+
+    def test_mt_is_timeseeded_false(self):
+        key = cryptobuffer()
+        key.fromHex('0101')
+        mt = mtcypher(key.mBytes)
+        # Generate a token
+        pwd = 'AAAAAAAAAAAAAA'
+        token = mt.password_token(pwd)
+        self.assertFalse( self.a.is_mt_timeseeded(token, pwd) )
+
 
 if __name__ == '__main__':
     unittest.main()
