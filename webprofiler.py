@@ -1,7 +1,7 @@
 from collections import OrderedDict
 from aes import aes
 from cryptobuffer import cryptobuffer
-import random
+import random, sys
 
 class webprofiler(object):
 
@@ -13,6 +13,8 @@ class webprofiler(object):
         self.aesKey = self.randomBytes(aes.blockSize)
         self.iv = bytearray(self.mAes.blockSize)
         self.nonce = bytearray(8)
+        self.encrypt = self.encryptCBC
+        self.decrypt = self.decryptCBC
 
     def randomBytes(self, length):
         key = bytearray(length)
@@ -62,53 +64,84 @@ class webprofiler(object):
         clear.stripPks7Padding()
         return self.parseWebString(clear.toString())
 
+    # Sets of functions to set the encryption type
+
+    # CBC
+    def setCBC(self):
+        self.encrypt = self.encryptCBC
+        self.decrypt = self.decryptCBC
+
+    def encryptCBC(self, plain):
+        plain.padPks7Block(aes.blockSize)
+        return self.mAes.encryptCBC(plain.mBytes, self.aesKey, self.iv)
+
+    def decryptCBC(self, cypher):
+        plain = cryptobuffer()
+        plain.mBytes = self.mAes.decryptCBC(cypher, self.aesKey, self.iv)
+        if not plain.isPks7Padded():
+            print "Invalid padding!"
+            throw
+        else:
+            plain.stripPks7Padding()
+        return plain
+    
+    # CTR
+    def setCTR(self):
+        self.encrypt = self.encryptCTR
+        self.decrypt = self.decryptCTR
+
+    def encryptCTR(self, plain):
+        return self.mAes.encryptCTR(plain.mBytes, self.aesKey, self.nonce)
+
+    def decryptCTR(self, cypher):
+        plain = cryptobuffer()
+        plain.mBytes = self.mAes.decryptCTR(cypher, self.aesKey, self.nonce)
+        return plain
+
+    # CBC with key as iv
+    def setCBC_IVkey(self):
+        self.encrypt = self.encryptCBC_IVkey
+        self.decrypt = self.decryptCBC_IVkey
+
+    def encryptCBC_IVkey(self, plain):
+        plain.padPks7Block(aes.blockSize)
+        return self.mAes.encryptCBC(plain.mBytes, self.aesKey, self.aesKey)
+
+    def decryptCBC_IVkey(self, cypher):
+        plain = cryptobuffer()
+        plain.mBytes = self.mAes.decryptCBC(cypher, self.aesKey, self.aesKey)
+        if not plain.isPks7Padded():
+            print "Invalid padding!"
+            throw
+        else:
+            plain.stripPks7Padding()
+        return plain
+
+    # The admin functions
     def cooking_user_bacon(self, userstring):
-        encrypted = cryptobuffer()
+        plain = cryptobuffer()
         d = OrderedDict()
         d['comment1'] = "cooking MCs"
         d['userdata'] = userstring
         d['comment2'] = "like a pound of bacon"
-        encrypted.fromString(self.makeWebString(d))
-        encrypted.padPks7Block(aes.blockSize)
-        return self.mAes.encryptCBC(encrypted.mBytes, self.aesKey, self.iv)
+        plain.fromString(self.makeWebString(d))
+        return self.encrypt(plain)
 
     def search_for_admin(self, cyphertext):
         admin = False
-        clear = cryptobuffer()
-        clear.mBytes = self.mAes.decryptCBC(cyphertext, self.aesKey, self.iv)
-        try:
-            if not clear.stripPks7Padding():
-                throw
-            d = self.parseWebString(clear.toString())
-            if (d['admin'] == 'true'):
-                admin = True
-        except:
-            admin = False
-        return admin
-
-    def cooking_ctr_bacon(self, userstring):
-        encrypted = cryptobuffer()
-        d = OrderedDict()
-        d['comment1'] = "cooking MCs"
-        d['userdata'] = userstring
-        d['comment2'] = "like a pound of bacon"
-        encrypted.fromString(self.makeWebString(d))
-        return self.mAes.encryptCTR(encrypted.mBytes, self.aesKey, self.nonce)
-
-    def search_ctr_admin(self, cyphertext):
-        admin = False
-        clear = cryptobuffer()
-        clear.mBytes = self.mAes.decryptCTR(cyphertext, self.aesKey, self.nonce)
-        d = self.parseWebString(clear.toString())
+        plain = self.decrypt(cyphertext)
+        d = self.parseWebString(plain.toString())
         if 'admin' in d and (d['admin'] == 'true'):
             admin = True
+        else:
+            admin = False
         return admin
-
+  
     def random_secret(self, plain):
         secret = cryptobuffer()
         secret.fromString(plain)
         secret.padPks7Block(aes.blockSize)
-        secret.mBytes = self.mAes.encryptCBC(secret.mBytes, self.aesKey, self.iv)
+        secret.mBytes = self.encrypt(secret.mBytes, self.aesKey, self.iv)
         return self.iv, secret.mBytes
 
     def cbc_padding_oracle(self, cyphertext):

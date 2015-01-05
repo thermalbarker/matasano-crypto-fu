@@ -148,7 +148,8 @@ class webprofile_analysis(object):
 
         return isAdmin
 
-
+    def cbc_key_as_iv_attack(self, encrypt, isAdmin):
+        
 
     def cbc_padding_attack(self, ivBytes, encryptedBytes, ispadded):
         cypher = cryptobuffer()

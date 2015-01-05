@@ -41,11 +41,20 @@ class webprofiler_test(unittest.TestCase):
         self.assertEqual('admin',  c['role'])
 
     def test_cbc_bitflip_attack(self):
+        # Use CTR encryption
+        self.web.setCBC()
         s = self.cracker.cbc_bitflip(self.web.cooking_user_bacon,
                                      self.web.search_for_admin)
         self.assertTrue(s)
 
-    def test_cbc_padding_oracle(self):
+    def test_ctr_bitflip_attack(self):
+        # Use CTR encryption
+        self.web.setCTR()
+        s = self.cracker.ctr_bitflip(self.web.cooking_user_bacon,
+                                     self.web.search_for_admin)
+        self.assertTrue(s)
+
+    def notest_cbc_padding_oracle(self):
         plain = cryptobuffer()
         plain.fromRandomLineInBase64File("data/17.txt")
         iv_and_secret = self.web.random_secret(plain.toString())
@@ -59,11 +68,6 @@ class webprofiler_test(unittest.TestCase):
         print plain.toString()
 
         self.assertEquals(plain.toString(), result.toString())
-
-    def test_ctr_bitflip_attack(self):
-        s = self.cracker.ctr_bitflip(self.web.cooking_ctr_bacon,
-                                     self.web.search_ctr_admin)
-        self.assertTrue(s)
 
 
 if __name__ == '__main__':
