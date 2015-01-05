@@ -60,5 +60,11 @@ class webprofiler_test(unittest.TestCase):
 
         self.assertEquals(plain.toString(), result.toString())
 
+    def test_ctr_bitflip_attack(self):
+        s = self.cracker.ctr_bitflip(self.web.cooking_ctr_bacon,
+                                     self.web.search_ctr_admin)
+        self.assertTrue(s)
+
+
 if __name__ == '__main__':
     unittest.main()

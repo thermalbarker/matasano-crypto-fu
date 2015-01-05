@@ -48,16 +48,8 @@ class webprofile_analysis(object):
 
         return x1.mBytes
 
-    def cbc_bitflip(self, encrypt, hasAdmin):
-        cyphertext = cryptobuffer()
+    def getFlippedAdmin(self):
         userBytes  = cryptobuffer()
-        isAdmin = False
-
-        print "\n---------------------------------"
-        print "CBC Bit Flip Attack!"
-        print "---------------------------------"
-
-
         # Two bytes to get to the end of a block
         userString =  "XX"
         # Our injected admin string
@@ -77,6 +69,17 @@ class webprofile_analysis(object):
         print "User string with flipped bits:"
         print userBytes.toString()
         print userBytes.toHexBlocks(aes.blockSize)        
+        return userBytes
+
+    def cbc_bitflip(self, encrypt, hasAdmin):
+        cyphertext = cryptobuffer()
+        isAdmin = False
+
+        print "\n---------------------------------"
+        print "CBC Bit Flip Attack!"
+        print "---------------------------------"
+
+        userBytes = self.getFlippedAdmin()
         
         # Run the encryption 
         cyphertext.mBytes = encrypt(userBytes.toString())
@@ -106,6 +109,46 @@ class webprofile_analysis(object):
         print "Decrpyted contains admin? ", isAdmin
 
         return isAdmin
+
+    def ctr_bitflip(self, encrypt, hasAdmin):
+        cyphertext = cryptobuffer()
+        userBytes  = cryptobuffer()
+        isAdmin = False
+
+        print "\n---------------------------------"
+        print "CTR Bit Flip Attack!"
+        print "---------------------------------"
+
+        userBytes = self.getFlippedAdmin()
+
+        # Run the encryption 
+        cyphertext.mBytes = encrypt(userBytes.toString())
+        print "The encrypted block:"
+        print cyphertext.toHexBlocks(aes.blockSize)
+
+        print "Running admin search:"
+        isAdmin = hasAdmin(cyphertext.mBytes)
+        print "Decrpyted contains admin? ", isAdmin
+
+        # In the case of CTR, we just need to flip the
+        # same bits in the cyphertext (with an offset for
+        # prepended text) as CTR is just an XOR
+        cyphertext.flipBit(128 * 2 + 1 * 8 - 1) # ' to &
+        cyphertext.flipBit(128 * 2 + 7 * 8 - 1) # < to =
+
+        print "Flipping first bit:"
+        print cyphertext.toHexBlocks(aes.blockSize)
+
+        print "Running admin search with flipped bits:"
+        # Now the first block will remain the same
+        # The second block will be scrambled
+        # The third block should contain our admin
+        isAdmin = hasAdmin(cyphertext.mBytes)
+        print "Decrpyted contains admin? ", isAdmin
+
+        return isAdmin
+
+
 
     def cbc_padding_attack(self, ivBytes, encryptedBytes, ispadded):
         cypher = cryptobuffer()

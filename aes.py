@@ -345,7 +345,7 @@ class aes(object):
         ctr = bytearray(struct.pack("!Q", block))
         ctr.reverse() # Convert to little endian
         # Combine with the nonce
-        keyStream[0:self.blockSize/2]  = nonce
+        keyStream[0:self.blockSize/2] = nonce[0:self.blockSize/2]
         keyStream[self.blockSize/2:self.blockSize] = ctr
         return keyStream
 

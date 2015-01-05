@@ -11,8 +11,8 @@ class webprofiler(object):
         self.mAes = aes()
         random.seed()
         self.aesKey = self.randomBytes(aes.blockSize)
-        self.iv = cryptobuffer()
-        self.iv.fromHex("00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00")
+        self.iv = bytearray(self.mAes.blockSize)
+        self.nonce = bytearray(8)
 
     def randomBytes(self, length):
         key = bytearray(length)
@@ -70,12 +70,12 @@ class webprofiler(object):
         d['comment2'] = "like a pound of bacon"
         encrypted.fromString(self.makeWebString(d))
         encrypted.padPks7Block(aes.blockSize)
-        return self.mAes.encryptCBC(encrypted.mBytes, self.aesKey, self.iv.mBytes)
+        return self.mAes.encryptCBC(encrypted.mBytes, self.aesKey, self.iv)
 
     def search_for_admin(self, cyphertext):
         admin = False
         clear = cryptobuffer()
-        clear.mBytes = self.mAes.decryptCBC(cyphertext, self.aesKey, self.iv.mBytes)
+        clear.mBytes = self.mAes.decryptCBC(cyphertext, self.aesKey, self.iv)
         try:
             if not clear.stripPks7Padding():
                 throw
@@ -86,15 +86,33 @@ class webprofiler(object):
             admin = False
         return admin
 
+    def cooking_ctr_bacon(self, userstring):
+        encrypted = cryptobuffer()
+        d = OrderedDict()
+        d['comment1'] = "cooking MCs"
+        d['userdata'] = userstring
+        d['comment2'] = "like a pound of bacon"
+        encrypted.fromString(self.makeWebString(d))
+        return self.mAes.encryptCTR(encrypted.mBytes, self.aesKey, self.nonce)
+
+    def search_ctr_admin(self, cyphertext):
+        admin = False
+        clear = cryptobuffer()
+        clear.mBytes = self.mAes.decryptCTR(cyphertext, self.aesKey, self.nonce)
+        d = self.parseWebString(clear.toString())
+        if 'admin' in d and (d['admin'] == 'true'):
+            admin = True
+        return admin
+
     def random_secret(self, plain):
         secret = cryptobuffer()
         secret.fromString(plain)
         secret.padPks7Block(aes.blockSize)
-        secret.mBytes = self.mAes.encryptCBC(secret.mBytes, self.aesKey, self.iv.mBytes)
-        return self.iv.mBytes, secret.mBytes
+        secret.mBytes = self.mAes.encryptCBC(secret.mBytes, self.aesKey, self.iv)
+        return self.iv, secret.mBytes
 
     def cbc_padding_oracle(self, cyphertext):
         clear = cryptobuffer()
-        clear.mBytes = self.mAes.decryptCBC(cyphertext, self. aesKey, self.iv.mBytes)
+        clear.mBytes = self.mAes.decryptCBC(cyphertext, self. aesKey, self.iv)
 #        print clear.toHexBlocks(aes.blockSize)
         return clear.isPks7Padded()
