@@ -109,6 +109,27 @@ class aes_test(unittest.TestCase):
         cypher2.mBytes = self.myAes.encryptCTR(self.buff.mBytes, self.key.mBytes, nonce.mBytes)
         self.assertEqual(self.cypher.toHex(), cypher2.toHex())
         
+    def test_ctrReEncrypt(self):
+        print
+        print "CTR Re-encryption"
+        cypher2 = cryptobuffer()
+        plain = cryptobuffer()
+        nonce  = cryptobuffer()
+        edit = cryptobuffer()
+        filename = "data/18.txt"
+        self.key.fromString("YELLOW SUBMARINE")
+        edit.fromString("OCRE SUBMERSIBLE")
+        nonce.fromHex("00 00 00 00 00 00 00 00")
+        print "Key:  ", self.key.toHex()
+        self.cypher.fromBase64File(filename)
+        print len(self.key.mBytes)
+
+        for i in range(0, len(self.cypher.mBytes)):
+            cypher2.mBytes = self.myAes.reencryptCTR(self.cypher.mBytes, self.key.mBytes, \
+                                                         nonce.mBytes, i, edit.mBytes)
+            plain.mBytes = self.myAes.decryptCTR(cypher2.mBytes, self.key.mBytes, nonce.mBytes)
+            self.assertEqual( edit.mBytes, plain.mBytes[i:i+len(edit.mBytes)] )
+
 
 if __name__ == '__main__':
     unittest.main()

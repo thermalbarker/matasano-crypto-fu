@@ -133,7 +133,7 @@ class aesanalysis(object):
         del(result[-1])
         return result
 
-    
+    # Provides solution for challenge 20
     def decryptCtrFixedNonce(self, cypherTexts):
         plainTexts = []
         truncatedTexts = []
@@ -163,3 +163,4 @@ class aesanalysis(object):
             plainTexts.append(plain)
     
         return plainTexts
+

@@ -338,8 +338,18 @@ class aes(object):
             lastblock = block
             k += s
         return result
- 
-    def encryptCTR(self, buff, key, nonce):
+
+    def getCtrKeyStream(self, block, key, nonce):
+        keyStream = bytearray(self.blockSize)
+        # convert counter into 64-bit counter
+        ctr = bytearray(struct.pack("!Q", block))
+        ctr.reverse() # Convert to little endian
+        # Combine with the nonce
+        keyStream[0:self.blockSize/2]  = nonce
+        keyStream[self.blockSize/2:self.blockSize] = ctr
+        return keyStream
+
+    def encryptCTR(self, buff, key, nonce, ctr = 0):
         s = self.blockSize
         # Here we can round up
         blocks = int(math.ceil(float(len(buff)) / float(s)))
@@ -347,12 +357,7 @@ class aes(object):
         k = 0
         
         for i in range(blocks):
-            block = bytearray(16)
-            # convert counter into 64-bit counter
-            ctr = bytearray(struct.pack("!Q", i))
-            ctr.reverse() # Convert to little endian
-            block[0:8]  = nonce
-            block[8:16] = ctr
+            block = self.getCtrKeyStream(i + ctr, key, nonce)
             # Encrypt the counter + nonce
             block = self.encryptBlock(block, key)
             # XOR with the plaintext
@@ -364,3 +369,20 @@ class aes(object):
     def decryptCTR(self, buff, key, nonce):
         # Encryption and decryption are the same!
         return self.encryptCTR(buff, key, nonce)
+
+    def reencryptCTR(self, buff, key, nonce, offset, edit):
+        cypherTotal = bytearray(len(buff))
+        # Calculate the first block number
+        blockNum = offset / self.blockSize
+        # And the byte number within the block
+        blockOffset = offset % self.blockSize
+        # Create a new block with offset
+        plain = bytearray(blockOffset)
+        plain.extend(edit)
+        # Encrypt the new plaintext
+        cypherPart = self.encryptCTR(plain, key, nonce, blockNum)
+        # Graft the newly encrypted data onto the original
+        cypherTotal[:] = buff[:]
+        cypherTotal[offset:offset + len(edit)] = cypherPart[blockOffset:blockOffset + len(edit)]
+        
+        return cypherTotal
