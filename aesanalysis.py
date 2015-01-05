@@ -164,3 +164,18 @@ class aesanalysis(object):
     
         return plainTexts
 
+    # Solution for challenge 25
+    def breakRandomAccessCtr(self, cypherText, edit):
+        plaintext = cryptobuffer()
+        # Loop over all cypher text bytes
+        for i in range(0, len(cypherText)):
+            # Loop over all possible byte values
+            for b in range(0, 256):
+                byteVal = bytearray(1)
+                byteVal[0] = b
+                reencrypted = edit( cypherText, i, byteVal )
+                if (cypherText[i] == reencrypted[i]):
+                    plaintext.mBytes.extend(byteVal)
+                    break
+
+        return plaintext.mBytes

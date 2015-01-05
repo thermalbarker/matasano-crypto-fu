@@ -125,10 +125,12 @@ class aes_test(unittest.TestCase):
         print len(self.key.mBytes)
 
         for i in range(0, len(self.cypher.mBytes)):
-            cypher2.mBytes = self.myAes.reencryptCTR(self.cypher.mBytes, self.key.mBytes, \
-                                                         nonce.mBytes, i, edit.mBytes)
-            plain.mBytes = self.myAes.decryptCTR(cypher2.mBytes, self.key.mBytes, nonce.mBytes)
-            self.assertEqual( edit.mBytes, plain.mBytes[i:i+len(edit.mBytes)] )
+            for j in range(1, len(edit.mBytes)):
+                cypher2.mBytes = self.myAes.reencryptCTR(self.cypher.mBytes, self.key.mBytes, \
+                                                             nonce.mBytes, i, edit.mBytes[0:j])
+                plain.mBytes = self.myAes.decryptCTR(cypher2.mBytes, self.key.mBytes, nonce.mBytes)
+                #print plain.toString()
+                self.assertEqual( edit.mBytes[0:j], plain.mBytes[i:i+j] )
 
 
 if __name__ == '__main__':

@@ -1,4 +1,4 @@
-#from aes import aes
+from aes import aes
 from aes import AesBlockmode
 from cryptobuffer import cryptobuffer
 import random
@@ -12,7 +12,6 @@ class blackbox(object):
         self.key = self.randomBytes(aes.blockSize)
         self.aesEcbUnknown = bytearray()
         self.nonce = "\x00" * 8
-        self.plain = bytearray()
 
     def randomBytes(self, length):
         key = bytearray(length)
@@ -64,15 +63,9 @@ class blackbox(object):
         infile.close()
         return (plain, encrypted)
 
-    # Random access RW AES CTR
-    def loadPlainTextFromFile(self, filename):
-        b = cryptobuffer()
-        b.fromFile(filename)
-        self.plain = b.mBytes
-
-    def encryptWithCtr(self):
-        return self.encryptCtr(self.plain)
+    def encryptWithCtr(self, plain):
+        return self.encryptCtr(plain)
 
     # The read write function
-    def editCtr(self, offset, newtext):
-        
+    def editCtr(self, cypherText, offset, newtext):
+        return self.mAes.reencryptCTR(cypherText, self.key, self.nonce, offset, newtext)

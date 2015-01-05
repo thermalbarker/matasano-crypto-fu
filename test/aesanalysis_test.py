@@ -49,7 +49,28 @@ class aesanalysis_test(unittest.TestCase):
         box = blackbox()
         plainAndCypherTexts = box.encryptCtrLinesFromFile("data/20.txt")
         self.aes_cracker.decryptCtrFixedNonce(plainAndCypherTexts[1])
-        
+
+    def test_breakRandomAccessCtr(self):
+        box = blackbox()
+        key = cryptobuffer()
+        cypher = cryptobuffer()
+        ctr = cryptobuffer()
+        crackedText = cryptobuffer()
+        plain = cryptobuffer()
+
+        filename = "data/25a.txt"
+        key.fromString("YELLOW SUBMARINE")
+        cypher.fromBase64File(filename)
+        plain.mBytes = self.aes.decryptECB(cypher.mBytes, key.mBytes)
+        ctr.mBytes = box.encryptWithCtr(plain.mBytes)
+
+        # Just check the CTR function is working OK:
+        self.assertEqual(plain.mBytes, box.encryptWithCtr(ctr.mBytes))
+
+        print plain.toString()       
+
+        crackedText.mBytes = self.aes_cracker.breakRandomAccessCtr(ctr.mBytes, box.editCtr)
+        self.assertEqual(crackedText.mBytes, plain.mBytes)
 
 if __name__ == '__main__':
     unittest.main()
