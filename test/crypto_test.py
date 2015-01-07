@@ -79,5 +79,12 @@ class cryptobuffer_test(unittest.TestCase):
         b.stripPks7Padding()
         self.assertEqual(s, b.toString())
 
+    def test_containsPrintable(self):
+        b = cryptobuffer()
+        b.fromString("This string only has printable characters!")
+        self.assertTrue(b.hasOnlyPrintable())
+        b.fromHex("0102030405060708090a0b0c0d0e0f")
+        self.assertFalse(b.hasOnlyPrintable())
+
 if __name__ == '__main__':
     unittest.main()

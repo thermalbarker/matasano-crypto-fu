@@ -54,7 +54,16 @@ class webprofiler_test(unittest.TestCase):
                                      self.web.search_for_admin)
         self.assertTrue(s)
 
-    def notest_cbc_padding_oracle(self):
+
+    def test_ctr_bitflip_attack(self):
+        # Use CBC_IV encryption
+        self.web.setCBC_IVkey()
+        key = self.cracker.cbc_key_as_iv_attack(self.web.cooking_user_bacon,
+                                                self.web.decrypt)
+        self.assertEquals(key, self.web.aesKey)
+
+
+    def test_cbc_padding_oracle(self):
         plain = cryptobuffer()
         plain.fromRandomLineInBase64File("data/17.txt")
         iv_and_secret = self.web.random_secret(plain.toString())

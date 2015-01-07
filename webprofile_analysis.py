@@ -148,8 +148,50 @@ class webprofile_analysis(object):
 
         return isAdmin
 
-    def cbc_key_as_iv_attack(self, encrypt, isAdmin):
-        
+    # This is the solution to challenge 27
+    def cbc_key_as_iv_attack(self, encrypt, decrypt):
+        cyphertext = cryptobuffer()
+        plain = cryptobuffer()
+        plain1 = cryptobuffer()
+        plain3 = cryptobuffer()
+        key = cryptobuffer()
+
+        print "\n---------------------------------"
+        print "CBC Key recovery with Key as IV"
+        print "---------------------------------"
+
+        # Arbitrary user string
+        userString = "Hip to the hippy to the hip hip hop"
+       
+        # Run the encryption (should be at least three blocks long)
+        cyphertext.mBytes = encrypt(userString)
+
+        # Now modify the message 
+        # C_1, C_2, C_3 -> C_1, 0, C_1
+        cyphertext.mBytes[16:32] = '\x00' * 16
+        cyphertext.mBytes[32:48] = cyphertext.mBytes[0:16]
+
+        print cyphertext.toHexBlocks(aes.blockSize)
+
+        # Try to decrypt, this should throw as there
+        # are non-ASCII bytes present
+        try:
+            decrypt(cyphertext.mBytes)
+        except ValueError as e:
+            # Recover the plaintext
+            plain.fromBase64(str(e))
+            print "Recovered plaintext from error:"
+            print plain.toPrintable()
+            # Now extract the IV, which is also the key:
+            # P'_1 XOR P'_3
+            plain1.mBytes = plain.mBytes[0:16]
+            plain3.mBytes = plain.mBytes[32:48]
+            key = plain1.xor(plain3)
+            print "Extracted Key:"
+            print key.toHex()
+
+        return key.mBytes
+
 
     def cbc_padding_attack(self, ivBytes, encryptedBytes, ispadded):
         cypher = cryptobuffer()

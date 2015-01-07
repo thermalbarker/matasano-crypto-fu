@@ -160,3 +160,9 @@ class cryptobuffer(bytearray):
             return True
         else:
             return False
+
+    def hasOnlyPrintable(self):
+        for b in self.mBytes:
+            if not chr(b) in string.printable:
+                return False
+        return True

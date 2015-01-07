@@ -19,7 +19,7 @@ class webprofiler(object):
     def randomBytes(self, length):
         key = bytearray(length)
         for i in range(0, length):
-            key[i] = random.randrange(aes.blockSize)
+            key[i] = random.randrange(256)
         return key
 
     def parseWebString(self, string):
@@ -78,11 +78,8 @@ class webprofiler(object):
     def decryptCBC(self, cypher):
         plain = cryptobuffer()
         plain.mBytes = self.mAes.decryptCBC(cypher, self.aesKey, self.iv)
-        if not plain.isPks7Padded():
-            print "Invalid padding!"
-            throw
-        else:
-            plain.stripPks7Padding()
+        if not plain.stripPks7Padding():
+            raise ValueError("Invalid Padding")
         return plain
     
     # CTR
@@ -110,11 +107,12 @@ class webprofiler(object):
     def decryptCBC_IVkey(self, cypher):
         plain = cryptobuffer()
         plain.mBytes = self.mAes.decryptCBC(cypher, self.aesKey, self.aesKey)
-        if not plain.isPks7Padded():
-            print "Invalid padding!"
-            throw
-        else:
-            plain.stripPks7Padding()
+        # Strip padding if it is there, ignore errors
+        plain.stripPks7Padding()
+        # Check for ascii characters
+        if not plain.hasOnlyPrintable():
+            # If there are non-valid ascii characters, return the plaintext!
+            raise ValueError(plain.toBase64())
         return plain
 
     # The admin functions
@@ -140,12 +138,11 @@ class webprofiler(object):
     def random_secret(self, plain):
         secret = cryptobuffer()
         secret.fromString(plain)
-        secret.padPks7Block(aes.blockSize)
-        secret.mBytes = self.encrypt(secret.mBytes, self.aesKey, self.iv)
+        secret.mBytes = self.encryptCBC(secret)
         return self.iv, secret.mBytes
 
     def cbc_padding_oracle(self, cyphertext):
         clear = cryptobuffer()
-        clear.mBytes = self.mAes.decryptCBC(cyphertext, self. aesKey, self.iv)
+        clear.mBytes = self.mAes.decryptCBC(cyphertext, self.aesKey, self.iv)
 #        print clear.toHexBlocks(aes.blockSize)
         return clear.isPks7Padded()
