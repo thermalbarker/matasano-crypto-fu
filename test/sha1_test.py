@@ -1,11 +1,14 @@
 import unittest
+import random
 from cryptobuffer import cryptobuffer
-from sha1 import sha1
+from sha1 import sha1, sha1_fixed_key
+from sha1_attack import sha1_attack
 
 class sha1_test(unittest.TestCase):
 
     def setUp(self):
         self.mySha1 = sha1()
+        self.myAttack = sha1_attack()
 
     def test_padding(self):
         message = cryptobuffer()
@@ -77,6 +80,73 @@ class sha1_test(unittest.TestCase):
         
         self.assertEqual( digest.toHex(), expected.toHex() )      
 
+    def test_sha1_attack(self):
+        message = cryptobuffer()
+        key = cryptobuffer()
+        digest  = cryptobuffer()
+        new_digest = cryptobuffer()
+
+        new_message = cryptobuffer()
+        ext_message = cryptobuffer()
+        ext_hash = cryptobuffer()
+
+        message.fromString("message")
+        key.fromString("YELLOW SUBMARINE")
+        digest.mBytes = self.mySha1.sha1_keyed_mac(key.mBytes, message.mBytes)
+
+        new_message.fromString("attack")
+        # Assume that the key length is known (it was in the original attack)
+        message_and_hash = self.myAttack.attack_known_length(message.mBytes, digest.mBytes, new_message.mBytes, len(key.mBytes))
+        ext_message.mBytes = message_and_hash[0]
+        ext_hash.mBytes = message_and_hash[1]
+
+        print
+        print "Attack message: ", ext_message.toPrintable()
+        print "Expected SHA1:  ", ext_hash.toHex()
+
+        new_digest.mBytes = self.mySha1.sha1_keyed_mac(key.mBytes, ext_message.mBytes)
+
+        print "Obtained SHA1:  ", new_digest.toHex()
+
+        self.assertEqual( new_digest.toHex(), ext_hash.toHex() )      
+        
+    def test_bacon_attack(self):
+        message = cryptobuffer()
+        key = cryptobuffer()
+        digest  = cryptobuffer()
+        new_digest = cryptobuffer()
+
+        new_message = cryptobuffer()
+        ext_message = cryptobuffer()
+        ext_hash = cryptobuffer()
+
+        message.fromString("comment1=cooking%20MCs;userdata=foo;comment2=%20like%20a%20pound%20of%20bacon")
+        
+        words = []
+        with open('data/vanilla.txt','r') as f:
+            for line in f:
+                for word in line.split():
+                    words.append(word)
+
+        key.fromString(random.choice(words))
+        sha_fixed = sha1_fixed_key(key.mBytes)
+        new_message.fromString("attack")
+
+        # Assume that the key length is known (it was in the original attack)
+        message_and_hash = self.myAttack.attack_brute_length(sha_fixed.calc_sha1_fixed_key, message.mBytes, new_message.mBytes)
+        ext_message.mBytes = message_and_hash[0]
+        ext_hash.mBytes = message_and_hash[1]
+
+        print
+        print "Attack message: ", ext_message.toPrintable()
+        print "Expected SHA1:  ", ext_hash.toHex()
+
+        new_digest.mBytes = sha_fixed.calc_sha1_fixed_key(ext_message.mBytes)
+
+        print "Obtained SHA1:  ", new_digest.toHex()
+
+        self.assertEqual( new_digest.toHex(), ext_hash.toHex() )      
+       
 
 if __name__ == '__main__':
     unittest.main()

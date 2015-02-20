@@ -12,11 +12,7 @@ class sha1():
 
     # Initialize variables:
 
-    i0 = 0x67452301
-    i1 = 0xEFCDAB89
-    i2 = 0x98BADCFE
-    i3 = 0x10325476
-    i4 = 0xC3D2E1F0
+    i_magic = [0x67452301, 0xEFCDAB89, 0x98BADCFE, 0x10325476, 0xC3D2E1F0]
 
     bits_in_a_byte = 8
     chunk_bits  = 512
@@ -38,43 +34,49 @@ class sha1():
     def len_bytes(self):
         return self.len_bits / self.bits_in_a_byte
 
+    def get_padding(self, length):
+        padding = bytearray()
+        # Calculate 64-bit message length as a bytearray
+        # Format string in hex characters - 2 hex chars per byte
+        fmt = '%%0%dx' % (self.len_bytes() * 2) 
+        # Write the length (in bits) into a 64-bit bytearray
+        ml = binascii.unhexlify( fmt % (length * self.bits_in_a_byte) )
+        # Append the bit '1' to the message i.e. by adding 0x80 if characters are 8 bits. 
+        padding.append(0x80)
+        # Append 0 < k < 512 bits '0', thus the resulting message length (in bits)
+        # is congruent to 448 (mod 512)
+        bytes_to_add = (self.chunk_bytes() - self.len_bytes()) - \
+                       ((length + len(padding)) % self.chunk_bytes())
+        #               512 bits           - 64 bits         
+        padding.extend( bytearray( bytes_to_add ) )
+        # Append ml, in a 64-bit big-endian integer.
+        # So now the message length is a multiple of 512 bits.
+        padding.extend(ml)
+
+        return padding        
+
     def pre_process(self, message):        
         """  Pre-processing
         """
         # Make a copy of the message
         padded = bytearray()
         padded[:] = message
-        # Calculate 64-bit message length as a bytearray
-        # Format string in hex characters - 2 hex chars per byte
-        fmt = '%%0%dx' % (self.len_bytes() * 2) 
-        # Write the length (in bits) into a 64-bit bytearray
-        ml = binascii.unhexlify( fmt % (len(message) * self.bits_in_a_byte) )
-        # Append the bit '1' to the message i.e. by adding 0x80 if characters are 8 bits. 
-        padded.append(0x80)
-        # Append 0 < k < 512 bits '0', thus the resulting message length (in bits)
-        # is congruent to 448 (mod 512)
-        bytes_to_add = (self.chunk_bytes() - self.len_bytes()) - (len(padded) % self.chunk_bytes())
-        #               512 bits           - 64 bits         
-        padded.extend( bytearray( bytes_to_add ) )
-        # Append ml, in a 64-bit big-endian integer.
-        # So now the message length is a multiple of 512 bits.
-        padded.extend(ml)
+        padded.extend( self.get_padding(len(message)) )
 
         return padded
 
 
-    def do_hash(self, message):
+    def do_hash_i(self, message, i):
         """ Process the message in successive 512-bit chunks:
         """
 
         hh = bytearray()
-
-        h0 = self.i0
-        h1 = self.i1
-        h2 = self.i2
-        h3 = self.i3
-        h4 = self.i4
-
+        h0 = i[0]
+        h1 = i[1]
+        h2 = i[2]
+        h3 = i[3]
+        h4 = i[4]
+        
         # break message into 512-bit chunks
         for chunk in self.chunks(message, self.chunk_bytes()):
             w = []
@@ -133,12 +135,33 @@ class sha1():
 
         return hh
 
+    def do_hash(self, message):
+        return self.do_hash_i(message, self.i_magic)
+
     def calc_sha1(self, message):
         padded = self.pre_process(message)
         return self.do_hash(padded)
+
+    def extend_sha1(self, current_sha1, message):
+        i = []
+        # break chunk into five 32-bit big-endian words w[i], 0 . i . 15
+        for x in self.chunks(current_sha1, 4):
+            # Convert to 32-bit int
+            i.append( int(binascii.hexlify(x), 16) )
+        return self.do_hash_i(message, i)
+
 
     def sha1_keyed_mac(self, key, message):
         cat = bytearray()
         cat[:] = key
         cat.extend(message)
         return self.calc_sha1(cat)
+
+
+class sha1_fixed_key(sha1):
+
+    def __init__(self, key):
+        self.key = key
+
+    def calc_sha1_fixed_key(message):
+        return self.sha1_keyed_mac(self.key, message)
