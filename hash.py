@@ -165,8 +165,9 @@ class sha1(hash):
 
 
 class md4(hash):
+    """MD4 Algorithm, from http://tools.ietf.org/html/rfc1320"""
     
-    magic = [0x01234567, 0x89abcdef, 0xfedcba98, 0x76543210 ]
+    magic = [0x67452301, 0xefcdab89, 0x98badcfe, 0x10325476 ]
 
     def f(self, x, y, z):
         return (x & y) | ((~x) & z)

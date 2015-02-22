@@ -79,15 +79,15 @@ class md4_test(hash_test):
     def setUp(self):
         self.my_digest = md4()
 
-    def test_sha1_lazydog(self):
+    def test_md4_lazydog(self):
         self.hash_test(self.my_digest, "The quick brown fox jumps over the lazy dog",\
                            "1bee69a46ba811185c194762abaeae90")
 
-    def test_sha1_lazycog(self):
-        self.hash_test(self.my_digest, "The quick brown fox jumps over the lazy dog",\
+    def test_md4_lazycog(self):
+        self.hash_test(self.my_digest, "The quick brown fox jumps over the lazy cog",\
                            "b86e130ce7028da59e672d56ad0113df")
 
-    def test_sha1_empty(self):
+    def test_md4_empty(self):
         self.hash_test(self.my_digest, "",\
                            "31d6cfe0d16ae931b73c59d7e0c089c0")
         
