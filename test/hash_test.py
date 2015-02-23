@@ -143,7 +143,7 @@ class hmac_test(unittest.TestCase):
                            "de7c9b85b8b78aa6bc8a7a36f70a90701c9db4d9")
 
     def test_timing_leak(self):
-        web = server()
+        web = server(sha1(), 20)
         attack = hash_break(sha1())
         message = cryptobuffer()
         required_hmac = cryptobuffer()
@@ -154,7 +154,7 @@ class hmac_test(unittest.TestCase):
         print "Injected message: ", message.toString()
         print "Required HMAC:    ", required_hmac.toHex()
 
-        hmac = attack.timing_leak_attack(web.insecure_compare, message)
+        hmac = attack.timing_leak_attack2(web.insecure_compare, message)
         self.assertEquals( hmac, required_hmac.mBytes )
 
 class hash_attack_test(unittest.TestCase):
