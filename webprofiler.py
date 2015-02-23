@@ -5,7 +5,6 @@ import random, sys
 
 class webprofiler(object):
 
-
     def __init__(self):
         self.uid = 10
         self.mAes = aes()

@@ -2,6 +2,7 @@ import unittest
 import random
 from cryptobuffer import cryptobuffer
 from hash import sha1, md4, hash, fixed_key_hash
+from hmac_webserver import server
 
 from hash_break import hash_break
 
@@ -140,6 +141,21 @@ class hmac_test(unittest.TestCase):
     def test_key(self):
         self.hmac_test("key", "The quick brown fox jumps over the lazy dog",\
                            "de7c9b85b8b78aa6bc8a7a36f70a90701c9db4d9")
+
+    def test_timing_leak(self):
+        web = server()
+        attack = hash_break(sha1())
+        message = cryptobuffer()
+        required_hmac = cryptobuffer()
+        message.fromString("secretfile")
+        required_hmac.mBytes = web.algo.hmac(message)
+
+        print
+        print "Injected message: ", message.toString()
+        print "Required HMAC:    ", required_hmac.toHex()
+
+        hmac = attack.timing_leak_attack(web.insecure_compare, message)
+        self.assertEquals( hmac, required_hmac.mBytes )
 
 class hash_attack_test(unittest.TestCase):
 

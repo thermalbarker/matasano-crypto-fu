@@ -1,5 +1,6 @@
 from hash import hash
 from cryptobuffer import cryptobuffer
+import time, operator
 
 class hash_break():
 
@@ -27,3 +28,27 @@ class hash_break():
                 return (total_message, new_hash)
 
         return (None, None)
+
+    def timing_leak_attack(self, compare_func, message, max_len = 20):
+        hmac = cryptobuffer()
+        
+        for i in range(0, max_len):
+            d = {}
+            hmac.mBytes.append(0)
+            mean = 0.0
+            for c in range(0, 256):
+                hmac.mBytes[i] = c
+                start = time.time()
+                compare_func(message, hmac)
+                elapsed = time.time() - start
+                #print "   Trying: ", hmac.toHex()
+                #print "   Time:   ", elapsed, " ms"
+                d[c] = elapsed
+                mean += elapsed
+            longest_c = max(d.iteritems(), key=operator.itemgetter(1))[0]
+            mean /= float(len(d))
+            hmac.mBytes[i] = longest_c 
+            print "i:", i, "Char: ", longest_c, "Time: ", d[longest_c], "Mean: ", mean 
+            print "Current hmac: ", hmac.toHex()
+
+        return hmac.mBytes
