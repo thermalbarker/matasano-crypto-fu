@@ -147,14 +147,14 @@ class hash_break():
                     sg_stdev = statistics.stdev(d[c])
                     
                     diff = (sg_ave - bg_ave) / bg_stdev
-                    diff_err = math.sqrt( (sg_stdev/len(d[c])**2 + (bg_stdev/len(bg))**2) )
+                    diff_err = math.sqrt( (sg_stdev**2)/len(d[c]) + (bg_stdev**2)/len(bg) ) / bg_stdev
 
                     if (diff > stdevs) and (diff_err < 1.0):
                         longest_c = c
 
                         print "    char:  ", format(hex(c))
-                        print "    n(bg): ", len(bg), "x_bar(bg):", bg_ave, "sigma(bg):", bg_stdev/bg_ave
-                        print "    n(sg): ", len(d[c]), "x_bar(sig):", sg_ave, "sigma(sg):", sg_stdev/aves[c],
+                        print "    x_bar(bg):", bg_ave, "sigma(bg):", bg_stdev/bg_ave, "n(bg):", len(bg)
+                        print "    x_bar(sg):", sg_ave, "sigma(sg):", sg_stdev/aves[c], "n(sg):", len(d[c])
                         print "    n_sigma:", diff, "+/-", diff_err
 
                         print "      --> Difference >", stdevs, "sigma, stopping!"
