@@ -111,6 +111,35 @@ class md4_test(hash_test):
                            "e33b4ddc9c38f2199c3e7b164fcc0536")
         
 
+class hmac_test(unittest.TestCase):
+
+    def hmac_test(self, k, m, d):
+        key = cryptobuffer()
+        message = cryptobuffer()
+        digest  = cryptobuffer()
+        expected = cryptobuffer()
+    
+        print
+        print "HMAC"
+        print "Message: '" + m + "'"
+        print "Key: '" + k + "'"
+        print "Expected Hash: ", d
+
+        key.fromString(k)
+        message.fromString(m)
+        expected.fromHex(d)
+
+        hmac_sha1 = fixed_key_hash(key.mBytes, sha1())
+
+        digest.mBytes = hmac_sha1.hmac(message.mBytes)            
+        self.assertEqual( digest.toHex(), expected.toHex() )
+
+    def test_blank(self):
+        self.hmac_test("","","fbdb1d1b18aa6c08324b7d64b71fb76370690e1d")
+        
+    def test_key(self):
+        self.hmac_test("key", "The quick brown fox jumps over the lazy dog",\
+                           "de7c9b85b8b78aa6bc8a7a36f70a90701c9db4d9")
 
 class hash_attack_test(unittest.TestCase):
 

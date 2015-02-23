@@ -78,7 +78,6 @@ class hash():
             i.append( int(binascii.hexlify(x), 16) )
         return self.do_hash(message, i)
 
-
     def keyed_mac(self, key, message):
         cat = bytearray()
         cat[:] = key
@@ -87,12 +86,24 @@ class hash():
 
 class fixed_key_hash():
 
+    trans_5C = bytearray((x ^ 0x5c) for x in range(256))
+    trans_36 = bytearray((x ^ 0x36) for x in range(256))
+
     def __init__(self, key, algo):
         self.key = key
         self.algo = algo
 
     def digest(self, message):
         return self.algo.keyed_mac(self.key, message)
+
+    def hmac(self, message):
+        key = self.key
+        if len(key) > self.algo.chunk_bytes():
+            key = self.algo.digest(key)
+        key = key + bytearray(self.algo.chunk_bytes() - len(key))
+        o_key_pad = key.translate(self.trans_5C)
+        i_key_pad = key.translate(self.trans_36)
+        return self.algo.digest(o_key_pad + self.algo.digest(i_key_pad + message))
 
     def is_valid_hash(self, message, hash):
         return (self.digest(message) == hash)
