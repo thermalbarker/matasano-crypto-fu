@@ -143,7 +143,7 @@ class hmac_test(unittest.TestCase):
                            "de7c9b85b8b78aa6bc8a7a36f70a90701c9db4d9")
 
     def test_timing_leak(self):
-        web = server(sha1(), 20)
+        web = server(sha1(), 5)
         attack = hash_break(sha1())
         message = cryptobuffer()
         required_hmac = cryptobuffer()
