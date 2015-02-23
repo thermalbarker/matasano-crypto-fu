@@ -37,6 +37,9 @@ class hash_test(unittest.TestCase):
         digest  = cryptobuffer()
         expected = cryptobuffer()
         
+        print "Message: '" + m + "'"
+        print "Expected Hash: ", d
+
         message.fromString(m)
         expected.fromHex(d)
 
@@ -90,6 +93,25 @@ class md4_test(hash_test):
     def test_md4_empty(self):
         self.hash_test(self.my_digest, "",\
                            "31d6cfe0d16ae931b73c59d7e0c089c0")
+
+    def test_md4_a(self):
+        self.hash_test(self.my_digest, "a",\
+                           "bde52cb31de33e46245e05fbdbd6fb24")
+
+    def test_md4_abc(self):
+        self.hash_test(self.my_digest, "abc",\
+                           "a448017aaf21d8525fc10ae87aa6729d")
+
+    def test_md4_alphabet(self):
+        self.hash_test(self.my_digest, "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789",\
+                           "043f8582f241db351ce627e153e7f0e4")
+
+    def test_md4_numbers(self):
+        self.hash_test(self.my_digest, "12345678901234567890123456789012345678901234567890123456789012345678901234567890",\
+                           "e33b4ddc9c38f2199c3e7b164fcc0536")
+        
+
+
         
 # class sha1_attack_test()
 #

@@ -1,4 +1,5 @@
 import binascii
+from struct import pack, unpack
 
 class hash():
 
@@ -28,14 +29,19 @@ class hash():
         # Format string in hex characters - 2 hex chars per byte
         fmt = '%%0%dx' % (self.len_bytes() * 2) 
         # Write the length (in bits) into a 64-bit bytearray
-        ml = binascii.unhexlify( fmt % (length * self.bits_in_a_byte) )
+
+        ml = bytearray( binascii.unhexlify( fmt % (length * self.bits_in_a_byte) ) )
+        if (self.little_endian):
+            ml.reverse()
+
         # Append the bit '1' to the message i.e. by adding 0x80 if characters are 8 bits. 
         padding.append(0x80)
         # Append 0 < k < 512 bits '0', thus the resulting message length (in bits)
         # is congruent to 448 (mod 512)
-        bytes_to_add = (self.chunk_bytes() - self.len_bytes()) - \
-                       ((length + len(padding)) % self.chunk_bytes())
-        #               512 bits           - 64 bits         
+        bytes_to_add = ((self.chunk_bytes() - len(ml)) \
+                            - ((length + len(padding)) % self.chunk_bytes())) \
+                            % self.chunk_bytes()
+
         padding.extend( bytearray( bytes_to_add ) )
         # Append ml, in a 64-bit big-endian integer.
         # So now the message length is a multiple of 512 bits.
@@ -57,11 +63,13 @@ class hash():
         padded = self.pre_process(message)
         return self.do_hash(padded, self.magic)
 
-    def extend_hash(self, current_sha1, message):
+    def extend_hash(self, current_hash, message):
         i = []
-        # break chunk into five 32-bit big-endian words w[i], 0 . i . 15
-        for x in self.chunks(current_sha1, 4):
+        # break chunk into five 32-bit words w[i], 0 . i . 15
+        for x in self.chunks(current_hash, 4):
             # Convert to 32-bit int
+            if (self.little_endian):
+                x.reverse()
             i.append( int(binascii.hexlify(x), 16) )
         return self.do_hash(message, i)
 
@@ -94,6 +102,7 @@ class sha1(hash):
     # Initialize variables:
 
     magic = [0x67452301, 0xEFCDAB89, 0x98BADCFE, 0x10325476, 0xC3D2E1F0]
+    little_endian = False
 
     def do_hash(self, message, i):
         """ Process the message in successive 512-bit chunks:
@@ -168,6 +177,17 @@ class md4(hash):
     """MD4 Algorithm, from http://tools.ietf.org/html/rfc1320"""
     
     magic = [0x67452301, 0xefcdab89, 0x98badcfe, 0x10325476 ]
+    little_endian = True
+    debug = False
+
+
+    def debugRegisters(self, msg, a, b, c, d):
+        if (self.debug):
+            print msg
+            print "A = ", format(a, '08x'),\
+                "B = ", format(b, '08x'),\
+                "C = ", format(c, '08x'),\
+                "D = ", format(d, '08x')
 
     def f(self, x, y, z):
         return (x & y) | ((~x) & z)
@@ -179,41 +199,55 @@ class md4(hash):
         return x ^ y ^ z
 
     def round1(self, a, b, c, d, k, s, X):
-        return self.rotateleft( a + self.f(b, c, d) + X[k], s )
+        r = self.rotateleft( (a + self.f(b, c, d) + X[k]) & 0xFFFFFFFF, s )
+        return r
 
     def round2(self, a, b, c, d, k, s, X):
-        return self.rotateleft( a + self.g(b, c, d) + X[k] + 0x5a827999, s )
+        r = self.rotateleft( (a + self.g(b, c, d) + X[k] + 0x5a827999) & 0xFFFFFFFF, s )
+        return r
 
     def round3(self, a, b, c, d, k, s, X):
-        return self.rotateleft( a + self.h(b, c, d) + X[k] + 0x6ed9eba1, s )
-
+        r = self.rotateleft( (a + self.h(b, c, d) + X[k] + 0x6ed9eba1) & 0xFFFFFFFF, s )
+        return r
 
     def do_hash(self, message, i):
         """ Process the message in successive 512-bit chunks:
         """
-
         hh = bytearray()
         A = i[0]
         B = i[1]
         C = i[2]
         D = i[3]
-        
+
+        ctr = 0
+
+        if (self.debug):
+            print "Padded message:"
+            print binascii.hexlify(message)
+
         # break message into 512-bit chunks
         for chunk in self.chunks(message, self.chunk_bytes()):
+            if (self.debug): print "Block:", ctr
+
             X = []
             # break chunk into sixteen 32-bit big-endian words w[i], 0 . i . 15
             for x in self.chunks(chunk, 4):
                 # Convert to 32-bit int
+                x.reverse()
                 X.append( int(binascii.hexlify(x), 16) )
-            
+                if (self.debug):
+                    print format(hex(X[-1]))
+
             # Initialize hash value for this chunk:
             AA = A
             BB = B
             CC = C
             DD = D
 
-            # Round 1
-            A = self.round1(A, B, C, D,  0,  3, X) 
+            if (self.debug):
+                self.debugRegisters("Initial State:", A, B, C, D)
+
+            A = self.round1(A, B, C, D,  0,  3, X)
             D = self.round1(D, A, B, C,  1,  7, X)
             C = self.round1(C, D, A, B,  2, 11, X)
             B = self.round1(B, C, D, A,  3, 19, X)
@@ -230,7 +264,13 @@ class md4(hash):
             C = self.round1(C, D, A, B, 14, 11, X)
             B = self.round1(B, C, D, A, 15, 19, X)
 
+            if (self.debug):
+                self.debugRegisters("After Round 1:", A, B, C, D)            
+
             # Round 2
+
+            if (self.debug):
+                print "Round 2"
             A = self.round2(A, B, C, D,  0,  3, X)
             D = self.round2(D, A, B, C,  4,  5, X)
             C = self.round2(C, D, A, B,  8,  9, X)
@@ -248,7 +288,13 @@ class md4(hash):
             C = self.round2(C, D, A, B, 11,  9, X)
             B = self.round2(B, C, D, A, 15, 13, X)
 
+            if (self.debug):
+                self.debugRegisters("After Round 2:", A, B, C, D)            
+
             # Round 3
+
+            if (self.debug):
+                print "Round 3"
             A = self.round3(A, B, C, D,  0,  3, X)
             D = self.round3(D, A, B, C,  8,  9, X)
             C = self.round3(C, D, A, B,  4, 11, X)
@@ -266,15 +312,25 @@ class md4(hash):
             C = self.round3(C, D, A, B,  7, 11, X)
             B = self.round3(B, C, D, A, 15, 15, X)
 
+
+            if (self.debug):
+                self.debugRegisters("After Round 3:", A, B, C, D)            
+
             A = (A + AA) & 0xFFFFFFFF
             B = (B + BB) & 0xFFFFFFFF
             C = (C + CC) & 0xFFFFFFFF
             D = (D + DD) & 0xFFFFFFFF
 
+
+            if (self.debug):
+                self.debugRegisters("After Incrementing:", A, B, C, D)            
+
+            ctr += 1
+
         # Produce the final hash value bytearray
-        hh.extend( binascii.unhexlify( '%08x' % A ))
-        hh.extend( binascii.unhexlify( '%08x' % B ))
-        hh.extend( binascii.unhexlify( '%08x' % C ))
-        hh.extend( binascii.unhexlify( '%08x' % D ))
+        hh.extend( pack('<L', A ))
+        hh.extend( pack('<L', B ))
+        hh.extend( pack('<L', C ))
+        hh.extend( pack('<L', D ))
 
         return hh
