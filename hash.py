@@ -23,14 +23,19 @@ class hash():
     def len_bytes(self):
         return self.len_bits / self.bits_in_a_byte
 
-    def get_padding(self, length):
+    def get_padding(self, length, fake_length = None):
         padding = bytearray()
+
         # Calculate 64-bit message length as a bytearray
         # Format string in hex characters - 2 hex chars per byte
         fmt = '%%0%dx' % (self.len_bytes() * 2) 
-        # Write the length (in bits) into a 64-bit bytearray
+        # Do we want to fake the length number?
+        length_pad = length
+        if (fake_length):
+            length_pad = fake_length
 
-        ml = bytearray( binascii.unhexlify( fmt % (length * self.bits_in_a_byte) ) )
+        # Write the length (in bits) into a 64-bit bytearray
+        ml = bytearray( binascii.unhexlify( fmt % (length_pad * self.bits_in_a_byte) ) )
         if (self.little_endian):
             ml.reverse()
 
@@ -80,14 +85,17 @@ class hash():
         cat.extend(message)
         return self.digest(cat)
 
-class fixed_key():
+class fixed_key_hash():
 
     def __init__(self, key, algo):
         self.key = key
         self.algo = algo
 
-    def calc_sha1_fixed_key(message):
+    def digest(self, message):
         return self.algo.keyed_mac(self.key, message)
+
+    def is_valid_hash(self, message, hash):
+        return (self.digest(message) == hash)
 
 
 class sha1(hash):

@@ -1,9 +1,9 @@
 import unittest
 import random
 from cryptobuffer import cryptobuffer
-from hash import sha1, md4, hash
+from hash import sha1, md4, hash, fixed_key_hash
 
-#from sha1_attack import sha1_attack
+from hash_break import hash_break
 
 class hash_test(unittest.TestCase):
 
@@ -112,76 +112,64 @@ class md4_test(hash_test):
         
 
 
+class hash_attack_test(unittest.TestCase):
+
+    def hash_attack(self, m, k, a, algo):
+        message = cryptobuffer()
+        key = cryptobuffer()
+        digest  = cryptobuffer()
+        new_digest = cryptobuffer()
+
+        new_message = cryptobuffer()
+        ext_message = cryptobuffer()
+        ext_hash = cryptobuffer()
+
+        keyed_hash = fixed_key_hash(k, algo)
+        attack = hash_break(algo)
+
+        message.fromString(m)
+        key.fromString(k)
+        digest.mBytes = keyed_hash.digest(message.mBytes)
+
+        new_message.fromString(a)
+        message_and_hash = attack.extend_hash(digest.mBytes, message.mBytes, new_message.mBytes, keyed_hash.is_valid_hash)
+        ext_message.mBytes = message_and_hash[0]
+        ext_hash.mBytes = message_and_hash[1]
+
+        print
+        print "Attack message: ", ext_message.toPrintable()
+        print "Expected Digest:  ", ext_hash.toHex()
+
+        new_digest.mBytes = keyed_hash.digest(ext_message.mBytes)
+
+        print "Obtained SHA1:  ", new_digest.toHex()
+
+        self.assertEqual( new_digest.toHex(), ext_hash.toHex() )      
         
-# class sha1_attack_test()
-#
-#    def test_sha1_attack(self):
-#        message = cryptobuffer()
-#        key = cryptobuffer()
-#        digest  = cryptobuffer()
-#        new_digest = cryptobuffer()
-#
-#        new_message = cryptobuffer()
-#        ext_message = cryptobuffer()
-#        ext_hash = cryptobuffer()
-#
-#        message.fromString("message")
-#        key.fromString("YELLOW SUBMARINE")
-#        digest.mBytes = self.mySha1.sha1_keyed_mac(key.mBytes, message.mBytes)
-#
-#        new_message.fromString("attack")
-#        # Assume that the key length is known (it was in the original attack)
-#        message_and_hash = self.myAttack.attack_known_length(message.mBytes, digest.mBytes, new_message.mBytes, len(key.mBytes))
-#        ext_message.mBytes = message_and_hash[0]
-#        ext_hash.mBytes = message_and_hash[1]
-#
-#        print
-#        print "Attack message: ", ext_message.toPrintable()
-#        print "Expected SHA1:  ", ext_hash.toHex()
-#
-#        new_digest.mBytes = self.mySha1.sha1_keyed_mac(key.mBytes, ext_message.mBytes)
-#
-#        print "Obtained SHA1:  ", new_digest.toHex()
-#
-#        self.assertEqual( new_digest.toHex(), ext_hash.toHex() )      
-#        
-#    def test_bacon_attack(self):
-#        message = cryptobuffer()
-#        key = cryptobuffer()
-#        digest  = cryptobuffer()
-#        new_digest = cryptobuffer()
-#
-#        new_message = cryptobuffer()
-#        ext_message = cryptobuffer()
-#        ext_hash = cryptobuffer()
-#
-#        message.fromString("comment1=cooking%20MCs;userdata=foo;comment2=%20like%20a%20pound%20of%20bacon")
-#        
-#        words = []
-#        with open('data/vanilla.txt','r') as f:
-#            for line in f:
-#                for word in line.split():
-#                    words.append(word)
-#
-#        key.fromString(random.choice(words))
-#        sha_fixed = sha1_fixed_key(key.mBytes)
-#        new_message.fromString("attack")
-#
-#        # Assume that the key length is known (it was in the original attack)
-#        message_and_hash = self.myAttack.attack_brute_length(sha_fixed.digest_fixed_key, message.mBytes, new_message.mBytes)
-#        ext_message.mBytes = message_and_hash[0]
-#        ext_hash.mBytes = message_and_hash[1]
-#
-#        print
-#        print "Attack message: ", ext_message.toPrintable()
-#        print "Expected SHA1:  ", ext_hash.toHex()
-#
-#        new_digest.mBytes = sha_fixed.digest_fixed_key(ext_message.mBytes)
-#
-#        print "Obtained SHA1:  ", new_digest.toHex()
-#
-#        self.assertEqual( new_digest.toHex(), ext_hash.toHex() )      
-#       
+    def yellow_submarine_attack(self, algo):
+        self.hash_attack("message", "YELLOW SUBMARINE", "attack", algo)
+
+    def bacon_attack(self, algo):
+        b = "comment1=cooking%20MCs;userdata=foo;comment2=%20like%20a%20pound%20of%20bacon"
+        words = []
+        with open('data/vanilla.txt','r') as f:
+            for line in f:
+                for word in line.split():
+                    words.append(word)
+        k = random.choice(words)
+        self.hash_attack(b, k, ";admin=true", algo)
+        
+    def test_yellow_submarine_sha1(self):
+        self.yellow_submarine_attack(sha1())
+
+    def test_yellow_submarine_md4(self):
+        self.yellow_submarine_attack(md4())
+
+    def test_bacon_sha1(self):
+        self.bacon_attack(sha1())
+
+    def test_bacon_md4(self):
+        self.bacon_attack(md4())
 
 
 if __name__ == '__main__':
