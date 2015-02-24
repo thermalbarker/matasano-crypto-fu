@@ -6,34 +6,10 @@ from hmac_webserver import server
 
 from hash_break import hash_break
 
-class hash_test(unittest.TestCase):
 
-    def setUp(self):
-        self.myHash = hash()
+class hash_test_base(unittest.TestCase):
 
-    def test_padding(self):
-        message = cryptobuffer()
-        padding = cryptobuffer()
-
-        message.fromHex('FFFF')
-        padding.mBytes = self.myHash.pre_process(message.mBytes)
-
-        # Expected padding:
-        padded = 'ffff800000000000' + \
-                 '0000000000000000' + \
-                 '0000000000000000' + \
-                 '0000000000000000' + \
-                 '0000000000000000' + \
-                 '0000000000000000' + \
-                 '0000000000000000' + \
-                 '0000000000000010'
-
-        self.assertEqual( 512 / 8, len(padding.mBytes) )
-        self.assertEqual(padded, padding.toHex())
-
-class hash_test(unittest.TestCase):
-
-    def hash_test(self, h, m, d):
+    def hash_compare(self, h, m, d):
         message = cryptobuffer()
         digest  = cryptobuffer()
         expected = cryptobuffer()
@@ -48,21 +24,42 @@ class hash_test(unittest.TestCase):
         self.assertEqual( digest.toHex(), expected.toHex() )
 
         
-class sha1_test(hash_test):
+class sha1_test(hash_test_base):
 
     def setUp(self):
         self.my_digest = sha1()
 
+    def test_padding(self):
+        message = cryptobuffer()
+        padding = cryptobuffer()
+
+        message.fromHex('FFFF')
+        padding.mBytes = self.my_digest.pre_process(message.mBytes)
+
+        # Expected padding:
+        padded = 'ffff800000000000' + \
+                 '0000000000000000' + \
+                 '0000000000000000' + \
+                 '0000000000000000' + \
+                 '0000000000000000' + \
+                 '0000000000000000' + \
+                 '0000000000000000' + \
+                 '0000000000000010'
+
+        self.assertEqual( 512 / 8, len(padding.mBytes) )
+        self.assertEqual(padded, padding.toHex())
+
+
     def test_sha1_lazydog(self):
-        self.hash_test(self.my_digest, "The quick brown fox jumps over the lazy dog",\
+        self.hash_compare(self.my_digest, "The quick brown fox jumps over the lazy dog",\
                            "2fd4e1c67a2d28fced849ee1bb76e7391b93eb12")
 
     def test_sha1_lazycog(self):
-        self.hash_test(self.my_digest, "The quick brown fox jumps over the lazy cog",\
+        self.hash_compare(self.my_digest, "The quick brown fox jumps over the lazy cog",\
                            "de9f2c7fd25e1b3afad3e85a0bd17d9b100db4b3")
 
     def test_sha1_empty(self):
-        self.hash_test(self.my_digest, "",\
+        self.hash_compare(self.my_digest, "",\
                            "da39a3ee5e6b4b0d3255bfef95601890afd80709")
         
     def test_sha1_mac(self):
@@ -78,43 +75,43 @@ class sha1_test(hash_test):
         digest.mBytes = self.my_digest.keyed_mac(key.mBytes, message.mBytes)        
         self.assertEqual( digest.toHex(), expected.toHex() )      
 
-class md4_test(hash_test):
+class md4_test(hash_test_base):
 
     def setUp(self):
         self.my_digest = md4()
 
     def test_md4_lazydog(self):
-        self.hash_test(self.my_digest, "The quick brown fox jumps over the lazy dog",\
+        self.hash_compare(self.my_digest, "The quick brown fox jumps over the lazy dog",\
                            "1bee69a46ba811185c194762abaeae90")
 
     def test_md4_lazycog(self):
-        self.hash_test(self.my_digest, "The quick brown fox jumps over the lazy cog",\
+        self.hash_compare(self.my_digest, "The quick brown fox jumps over the lazy cog",\
                            "b86e130ce7028da59e672d56ad0113df")
 
     def test_md4_empty(self):
-        self.hash_test(self.my_digest, "",\
+        self.hash_compare(self.my_digest, "",\
                            "31d6cfe0d16ae931b73c59d7e0c089c0")
 
     def test_md4_a(self):
-        self.hash_test(self.my_digest, "a",\
+        self.hash_compare(self.my_digest, "a",\
                            "bde52cb31de33e46245e05fbdbd6fb24")
 
     def test_md4_abc(self):
-        self.hash_test(self.my_digest, "abc",\
+        self.hash_compare(self.my_digest, "abc",\
                            "a448017aaf21d8525fc10ae87aa6729d")
 
     def test_md4_alphabet(self):
-        self.hash_test(self.my_digest, "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789",\
+        self.hash_compare(self.my_digest, "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789",\
                            "043f8582f241db351ce627e153e7f0e4")
 
     def test_md4_numbers(self):
-        self.hash_test(self.my_digest, "12345678901234567890123456789012345678901234567890123456789012345678901234567890",\
+        self.hash_compare(self.my_digest, "12345678901234567890123456789012345678901234567890123456789012345678901234567890",\
                            "e33b4ddc9c38f2199c3e7b164fcc0536")
         
 
 class hmac_test(unittest.TestCase):
 
-    def hmac_test(self, k, m, d):
+    def hmac_compare(self, k, m, d):
         key = cryptobuffer()
         message = cryptobuffer()
         digest  = cryptobuffer()
@@ -136,15 +133,16 @@ class hmac_test(unittest.TestCase):
         self.assertEqual( digest.toHex(), expected.toHex() )
 
     def test_blank(self):
-        self.hmac_test("","","fbdb1d1b18aa6c08324b7d64b71fb76370690e1d")
+        self.hmac_compare("","","fbdb1d1b18aa6c08324b7d64b71fb76370690e1d")
         
     def test_key(self):
-        self.hmac_test("key", "The quick brown fox jumps over the lazy dog",\
+        self.hmac_compare("key", "The quick brown fox jumps over the lazy dog",\
                            "de7c9b85b8b78aa6bc8a7a36f70a90701c9db4d9")
 
-    def test_timing_leak(self):
-        web = server(sha1(), 5)
-        attack = hash_break(sha1())
+    def attack_timing_leak(self, attack_func, timing_leak, stop_at_bytes):
+
+        web = server(sha1(), timing_leak)
+
         message = cryptobuffer()
         required_hmac = cryptobuffer()
         message.fromString("secretfile")
@@ -154,8 +152,46 @@ class hmac_test(unittest.TestCase):
         print "Injected message: ", message.toString()
         print "Required HMAC:    ", required_hmac.toHex()
 
-        hmac = attack.timing_leak_attack2(web.insecure_compare, message)
-        self.assertEquals( hmac, required_hmac.mBytes )
+        hmac = attack_func(web.insecure_compare, message, 20, stop_at_bytes)
+
+        if (stop_at_bytes >= 0):
+            self.assertEquals( hmac, required_hmac.mBytes[0:stop_at_bytes] )
+        else:
+           self.assertEquals( hmac, required_hmac.mBytes )
+        
+
+    def test_simple_timing_leak(self):
+
+        # Stop attack after certain number of bytes
+        # Change to -1 to go to the bitter end
+        # The simple attack will take ~40 mins with 50 ms sleep
+        # so a reduced version is used for unit testing.
+        # 
+        stop_at_bytes = 3
+        # The minimum timing leak with this method will be
+        # machine dependent - may have to increase to get
+        # it working on a machine with more jitter
+        # Intel Core i7: working with 10ms
+        timing_leak = 10
+
+        attack = hash_break(sha1())
+
+        self.attack_timing_leak( attack.timing_leak_attack, timing_leak, stop_at_bytes )
+
+    def test_statistical_timing_leak(self):
+
+        # Stop attack after certain number of bytes
+        # Change to -1 to go to the bitter end
+        # 
+        stop_at_bytes = 3
+        # On an Intel Core i7 with fedora, the background has a 
+        # Standard deviation of ~0.4 ms. To get a 5 sigma signal,
+        # the signal must be 2 ms away from the background
+        timing_leak = 5
+
+        attack = hash_break(sha1())
+
+        self.attack_timing_leak( attack.timing_leak_attack2, timing_leak, stop_at_bytes )
 
 class hash_attack_test(unittest.TestCase):
 
