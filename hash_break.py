@@ -65,21 +65,24 @@ class hash_break():
         return hmac.mBytes
 
 
-    def timing_leak_attack2(self, compare_func, message, stdevs = 5, max_len = 32, max_runs = 100):
+    def timing_leak_attack2(self, compare_func, message, stdevs = 3, max_len = 32, max_runs = 100):
         hmac = cryptobuffer()
         total_start = time.time()
         average = statistics.median
+
 
         for i in range(0, max_len):
             d = {}
             aves = {}
             hmac.mBytes.append(0)
+            max_diff = -1
 
             print "Byte:", i
 
             for c in range(0,256):
                 d[c] = []
             longest_c = -1
+            best_c = -1
 
             for j in range(0, max_runs):
 
@@ -107,21 +110,27 @@ class hash_break():
                     diff = (sg_ave - bg_ave) / bg_stdev
                     diff_err = math.sqrt( (sg_stdev**2)/len(d[c]) + (bg_stdev**2)/len(bg) ) / bg_stdev
 
-                    if (diff > stdevs) and (diff_err < 1.0):
-                        longest_c = c
+                    if (diff > max_diff) and (diff_err < 1.0):
+                        max_diff = diff
+                        best_c = c
 
                         print "    char:  ", format(hex(c))
                         print "    x_bar(bg):", bg_ave, "sigma(bg):", bg_stdev/bg_ave, "n(bg):", len(bg)
                         print "    x_bar(sg):", sg_ave, "sigma(sg):", sg_stdev/aves[c], "n(sg):", len(d[c])
                         print "    n_sigma:", diff, "+/-", diff_err
 
-                        print "      --> Difference >", stdevs, "sigma, stopping!"
-                        break
+                        if (diff > stdevs):
+                            longest_c = c
+                            print "      --> Difference >", stdevs, "sigma, stopping!"
+                            break
 
                 if (longest_c >= 0):
                     break
-
-            hmac.mBytes[i] = longest_c
+            
+            if (longest_c >= 0):
+                hmac.mBytes[i] = longest_c
+            else:
+                hmac.mBytes[i] = best_c
 
             print "  Char: ", longest_c, "Time: ", aves[longest_c]
             print "  Current hmac: ", hmac.toHex()
