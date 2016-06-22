@@ -95,6 +95,12 @@ class cryptobuffer(bytearray):
         self.fromBase64(lines[random.randrange(len(lines))])
         infile.close()
 
+    def fromRandomBytes(self, length):
+        self.mBytes = bytearray(length)
+        for i in range(0, length):
+            self.mBytes[i] = random.randrange(256)
+        return self.mBytes
+
     def singlecharxor(self, char):
         charbuff = cryptobuffer()
         length = len(self.toString()) 
