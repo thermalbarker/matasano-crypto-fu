@@ -79,10 +79,79 @@ class diffiehellman_test(unittest.TestCase):
         # s' = p ** a % p
         #    = 0
         s_mitm = 0
-        msg_decrypted = dh_decrypt(cypher_a_b, 0, iv)
+        msg_decrypted = dh_decrypt(cypher_a_b, s_mitm, iv)
 
         self.assertEqual(msg_a_b, msg_decrypted)
         
+    def dh_negotiated_group(self, g, s_mitm):
+        p = self.p
+        c = cryptobuffer()
+
+        a = random.randrange(0, self.private_key_size) % p
+        A = dh_public_key(p, g, a)
+
+        b = random.randrange(0, self.private_key_size) % p
+        B = dh_public_key(p, g, b)
+        
+        # Encrypted message from a to b
+        # This time the public key has been swapped with p
+        s_a = dh_shared_secret(p, B, a)
+        msg_a_b = c.fromRandomBytes(256)
+        iv = c.fromRandomBytes(16)
+        cypher_a_b = dh_encrypt(msg_a_b, s_a, iv)
+
+        # Try to decrypt with MITM shared secret 
+        msg_decrypted = dh_decrypt(cypher_a_b, s_mitm, iv)
+
+        self.assertEqual(msg_a_b, msg_decrypted)
+
+    def test_dh_negotiated_group_1(self):
+        # If g = 1
+        # s = (g ** ab) mod p
+        #   = 1
+        self.dh_negotiated_group(1, 1)
+
+    def test_dh_negotiated_group_p(self):
+        # If g = p
+        # s = (g ** ab) mod p
+        #   = 0
+        self.dh_negotiated_group(self.p, 0)
+
+    def test_dh_negotiated_group_p1(self):
+        # If g = p - 1
+        # s = (g ** ab) mod p
+        #   = ((p - 1) ** ab) mod p
+        #   = (-1 ** ab) mod p
+        #   = 1 if ab is even
+        #   = p - 1 if ab is odd
+        p = self.p
+        g = p - 1
+        s_mitm_even = 1
+        s_mitm_odd = p - 1
+        c = cryptobuffer()
+
+        a = random.randrange(0, self.private_key_size) % p
+        A = dh_public_key(p, g, a)
+
+        b = random.randrange(0, self.private_key_size) % p
+        B = dh_public_key(p, g, b)
+        
+        # Encrypted message from a to b
+        # This time the public key has been swapped with p
+        s_a = dh_shared_secret(p, B, a)
+        msg_a_b = c.fromRandomBytes(256)
+        iv = c.fromRandomBytes(16)
+        cypher_a_b = dh_encrypt(msg_a_b, s_a, iv)
+
+        # Try to decrypt with MITM shared secret
+        # We can try one of two options as we don't know a * b
+        msg_decrypted_even = dh_decrypt(cypher_a_b, s_mitm_even, iv)
+        msg_decrypted_odd = dh_decrypt(cypher_a_b, s_mitm_odd, iv)
+
+        one_correct = (msg_decrypted_even == msg_a_b) or (msg_decrypted_odd == msg_a_b)
+
+        self.assertTrue(one_correct)
+
 
 if __name__ == '__main__':
     unittest.main()
