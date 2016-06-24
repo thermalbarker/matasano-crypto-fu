@@ -56,5 +56,33 @@ class diffiehellman_test(unittest.TestCase):
 
         self.assertEqual(msg_a_b, msg_decrypted)
 
+    def test_mitm_attack(self):
+        p = self.p
+        g = self.g
+        c = cryptobuffer()
+
+        a = random.randrange(0, self.private_key_size) % p
+        A = dh_public_key(p, g, a)
+
+        b = random.randrange(0, self.private_key_size) % p
+        B = dh_public_key(p, g, b)
+        
+        # Encrypted message from a to b
+        # This time the public key has been swapped with p
+        s_a = dh_shared_secret(p, p, a)
+        msg_a_b = c.fromRandomBytes(256)
+        iv = c.fromRandomBytes(16)
+        cypher_a_b = dh_encrypt(msg_a_b, s_a, iv)
+
+        # MITM can derive key as the shared secret is always 0
+        # s  = B ** a % p (B -> p)
+        # s' = p ** a % p
+        #    = 0
+        s_mitm = 0
+        msg_decrypted = dh_decrypt(cypher_a_b, 0, iv)
+
+        self.assertEqual(msg_a_b, msg_decrypted)
+        
+
 if __name__ == '__main__':
     unittest.main()
