@@ -1,6 +1,6 @@
 import unittest
 
-from srp import SrpServer, SrpClient
+from srp import SrpServer, SrpClient, ZeroKeyClient
 
 class srp_test(unittest.TestCase):
     # Some NIST BigNums
@@ -51,6 +51,29 @@ class srp_test(unittest.TestCase):
     def test_srp_bad_password(self):
         self.assertFalse(self.srp_auth_try(self.user, "wrongpassword"))
 
+    def srp_manipulate_key(self, Ain, user, password):
+        client = ZeroKeyClient(self.N, self.g, self.k, user, password, Ain)
+        # C -> S
+        A = client.getA()
+
+        # S -> C
+        B = self.server.getB()
+        salt = self.server.getSalt()
+
+        # C -> S
+        auth = client.getAuth(B, salt)
+
+        # S -> C
+        return self.server.checkAuth(A, auth)
+        
+    def test_srp_zero_key(self):
+        self.assertTrue(self.srp_manipulate_key(0, self.user, "wrongpassword"))
+
+    def test_srp_N_key(self):
+        self.assertTrue(self.srp_manipulate_key(self.N, self.user, "wrongpassword"))
+
+    def test_srp_2N_key(self):
+        self.assertTrue(self.srp_manipulate_key(2 * self.N, self.user, "wrongpassword"))
 
 if __name__ == '__main__':
     unittest.main()

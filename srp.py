@@ -106,3 +106,30 @@ class SrpClient(SrpCommon):
         s = cryptobuffer()
         s.fromInt(salt)
         return hmac.new(K.mBytes, s.mBytes, hashlib.sha1).digest()
+
+class ZeroKeyClient(SrpCommon):
+
+    def __init__(self, N, g, k, I, P, A = 0):
+        super(ZeroKeyClient, self).__init__(N, g, k, I, P)
+        self.A = A
+
+    def getA(self):
+        return self.A
+
+    def getI(self):
+        return self.I
+
+    def getU(self, B):
+        return self.computeU(self.getA(), B)
+
+    def getK(self, salt, B):
+        S = 0
+        K = self.hash(S)
+        return K
+
+    def getAuth(self, B, salt):
+        K = cryptobuffer()
+        K.fromInt(self.getK(salt, B))
+        s = cryptobuffer()
+        s.fromInt(salt)
+        return hmac.new(K.mBytes, s.mBytes, hashlib.sha1).digest()
