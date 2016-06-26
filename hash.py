@@ -340,7 +340,6 @@ class md4(hash):
             C = (C + CC) & 0xFFFFFFFF
             D = (D + DD) & 0xFFFFFFFF
 
-
             if (self.debug):
                 self.debugRegisters("After Incrementing:", A, B, C, D)            
 
