@@ -2,7 +2,7 @@ import binascii
 from struct import pack, unpack
 
 class hash():
-
+    little_endian = False
     bits_in_a_byte = 8
     chunk_bits  = 512
     len_bits = 64

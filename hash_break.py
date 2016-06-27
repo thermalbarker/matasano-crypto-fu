@@ -70,7 +70,6 @@ class hash_break():
         total_start = time.time()
         average = statistics.median
 
-
         for i in range(0, max_len):
             d = {}
             aves = {}
