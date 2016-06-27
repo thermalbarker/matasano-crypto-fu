@@ -1,6 +1,6 @@
 import unittest
 
-from srp import SrpServer, SrpClient, ZeroKeyClient
+from srp import SrpServer, SrpClient, ZeroKeyClient, SrpSimpleClient, SrpSimpleServer, SrpSimpleDictionaryAttack
 
 class srp_test(unittest.TestCase):
     # Some NIST BigNums
@@ -74,6 +74,50 @@ class srp_test(unittest.TestCase):
 
     def test_srp_2N_key(self):
         self.assertTrue(self.srp_manipulate_key(2 * self.N, self.user, "wrongpassword"))
+
+    def try_simple_srp(self, user, password):
+        server = SrpSimpleServer(self.N, self.g, self.k, user, password)
+        client = SrpSimpleClient(self.N, self.g, self.k, user, password)
+        # C -> S
+        A = client.getA()
+
+        # S -> C
+        B = server.getB()
+        salt = server.getSalt()
+        u = server.getU()
+
+        # C -> S
+        auth = client.getAuth(B, salt, u)
+
+        # S -> C
+        return server.checkAuth(A, auth)
+
+    def test_srp_simple_auth_ok(self):
+        self.assertTrue(self.srp_auth_try(self.user, self.password))
+
+    def test_srp_simple_auth_fail(self):
+        self.assertFalse(self.srp_auth_try(self.user, "wrongpassword"))
+        
+    def test_srp_dict_attack(self):
+        mitm = SrpSimpleDictionaryAttack("data/passwords.txt", self.N, self.g, self.k, self.user)
+        client = SrpSimpleClient(self.N, self.g, self.k, self.user, self.password)
+
+        # C -> S
+        A = client.getA()
+
+        # Compute dictionary for this A
+        mitm.CalcHashes(A, 20)
+
+        # S -> C
+        B = mitm.getB()
+        salt = mitm.getSalt()
+        u = mitm.getU()
+
+        # C -> S
+        auth = client.getAuth(B, salt, u)
+
+        password = mitm.FindPassword(auth)
+        self.assertEqual(self.password, password)
 
 if __name__ == '__main__':
     unittest.main()
