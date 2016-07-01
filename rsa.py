@@ -62,6 +62,14 @@ def egcd(a, b):
         g, y, x = egcd(b % a, a)
         return (g, x - (b // a) * y, y)
 
+def xgcd(b, n):
+    x0, x1, y0, y1 = 1, 0, 0, 1
+    while n != 0:
+        q, b, n = b // n, n, b % n
+        x0, x1 = x1, x0 - q * x1
+        y0, y1 = y1, y0 - q * y1
+    return  b, x0, y0
+
 def modinv(a, m):
     g, x, y = egcd(a, m)
     if g != 1:
@@ -69,17 +77,45 @@ def modinv(a, m):
     else:
         return x % m
 
-def gen_key_pair(e = 3):
-    p = gen_prime()
-    q = gen_prime()
+def gen_key_pair(e):
+    d = None
 
-    n = p * q
-    et = (p - 1) * (q - 1)
-    d = modinv(e, et)
+    while d is None:
+        p = gen_prime()
+        q = gen_prime()
+
+        n = p * q
+        et = (p - 1) * (q - 1)
+
+        try:
+            # Sometimes this does not work, not sure why
+            d = modinv(e, et)
+        except:
+            d = None
 
     return d, n
 
+def encrypt(m, e, n):
+    return modexp(m, e, n)
 
+def decrypt(c, d, n):
+    return modexp(c, d, n)
+
+def encrypt_str(b, e, n):
+    buff = cryptobuffer()
+    buff.mBytes = b
+    m = buff.toInt()
+    c = encrypt(m, e, n)
+    buff.fromInt(c)
+    return buff.mBytes
+
+def decrypt_str(b, d, n):
+    buff = cryptobuffer()
+    buff.mBytes = b
+    c = buff.toInt()
+    m = decrypt(c, d, n)
+    buff.fromInt(m)
+    return buff.mBytes
 
 
 
