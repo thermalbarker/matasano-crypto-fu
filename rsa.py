@@ -70,12 +70,41 @@ def xgcd(b, n):
         y0, y1 = y1, y0 - q * y1
     return  b, x0, y0
 
+#https://rosettacode.org/wiki/Modular_inverse#Python
+def rgcd(aa, bb):
+    lastremainder, remainder = abs(aa), abs(bb)
+    x, lastx, y, lasty = 0, 1, 1, 0
+    while remainder:
+        lastremainder, (quotient, remainder) = remainder, divmod(lastremainder, remainder)
+        x, lastx = lastx - quotient*x, x
+        y, lasty = lasty - quotient*y, y
+    return lastremainder, lastx * (-1 if aa < 0 else 1), lasty * (-1 if bb < 0 else 1)
+
 def modinv(a, m):
-    g, x, y = egcd(a, m)
+    g, x, y = rgcd(a, m)
     if g != 1:
         raise Exception('modular inverse does not exist')
     else:
         return x % m
+
+# http://stackoverflow.com/questions/356090/how-to-compute-the-nth-root-of-a-very-big-integer
+def invpow(x,n):
+    """Finds the integer component of the n'th root of x,
+    an integer such that y ** n <= x < (y + 1) ** n.
+    """
+    high = 1
+    while high ** n <= x:
+        high *= 2
+    low = high/2
+    while low < high:
+        mid = (low + high) // 2
+        if low < mid and mid**n < x:
+            low = mid
+        elif high > mid and mid**n > x:
+            high = mid
+        else:
+            return mid
+    return mid + 1
 
 def gen_key_pair(e):
     d = None
