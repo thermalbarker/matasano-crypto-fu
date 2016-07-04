@@ -102,6 +102,24 @@ class rsa_test(unittest.TestCase):
 
         self.assertEqual(m, r)
         
+    def test_unpadded_recovery_oracle(self):
+        e = 3
+        d, n = rsa.gen_key_pair(e)
+
+        # Other message
+        m = random.randrange(1, 2 ** 1024)
+        # Encrypted result
+        c = rsa.encrypt(m, e, n)
+        print c
+
+        # The attack: can't decrypt directly
+        s = random.randrange(1, 2 ** 1024) % n
+        c_dash = (rsa.modexp(s, e, n) * c) % n
+        print c_dash
+        p_dash = rsa.decrypt(c_dash, d, n)
+        p = (p_dash * rsa.modinv(s, n)) % n
+        
+        self.assertEqual(m, p)
 
 if __name__ == '__main__':
     unittest.main()
