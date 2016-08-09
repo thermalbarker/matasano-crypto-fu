@@ -35,9 +35,9 @@ class dsa(object):
         w = cryptomath.modinv(s, self.q)
         u1 = (self.hash(m) * w) % self.q
         u2 = (r * w) % self.q
-        v = (cryptomath.modexp(self.g, u1, self.p) * cryptomath.modexp(y, u2, self.p)) % self.q
-        print v
-        print r
+        u1 = cryptomath.modexp(self.g, u1, self.p)
+        u2 = cryptomath.modexp(y, u2, self.p)
+        v = u1 * u2 % self.p % self.q
         return v == r
 
         
