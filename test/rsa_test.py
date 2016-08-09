@@ -1,6 +1,7 @@
 import unittest
 import random
 import rsa
+import cryptomath
 from cryptobuffer import cryptobuffer
 
 class rsa_test(unittest.TestCase):
@@ -9,20 +10,20 @@ class rsa_test(unittest.TestCase):
         random.seed()
 
     def test_mymodexp(self):
-        A = rsa.modexp(4, 13, 497)
+        A = cryptomath.modexp(4, 13, 497)
         self.assertEqual(445, A)
 
     def test_prime_small(self):
-        self.assertTrue(rsa.probably_prime(3))
+        self.assertTrue(cryptomath.probably_prime(3))
 
     def test_prime_big(self):
-        self.assertTrue(rsa.probably_prime(4547337172376300111955330758342147474062293202868155909489))
+        self.assertTrue(cryptomath.probably_prime(4547337172376300111955330758342147474062293202868155909489))
 
     def test_not_prime_big(self):
-        self.assertFalse(rsa.probably_prime(4547337172376300111955330758342147474062293202868155909393))
+        self.assertFalse(cryptomath.probably_prime(4547337172376300111955330758342147474062293202868155909393))
 
     def test_modinv(self):
-        self.assertEqual(2753, rsa.modinv(17, 3120))
+        self.assertEqual(2753, cryptomath.modinv(17, 3120))
 
     def test_encrypt_decrypt(self):
         e = 3
@@ -71,7 +72,7 @@ class rsa_test(unittest.TestCase):
         self.assertEqual(m, r)
 
     def test_invpow(self):
-        y = rsa.invpow(237734537465873465, 5)
+        y = cryptomath.invpow(237734537465873465, 5)
         self.assertEqual(y, 2986)
 
     def test_broadcast_attack(self):
@@ -94,11 +95,11 @@ class rsa_test(unittest.TestCase):
 
         n012 = n0 * n1 * n2
 
-        r3 = ((c0 * ms0 * rsa.modinv(ms0, n0)) + \
-              (c1 * ms1 * rsa.modinv(ms1, n1)) + \
-              (c2 * ms2 * rsa.modinv(ms2, n2))) % n012
+        r3 = ((c0 * ms0 * cryptomath.modinv(ms0, n0)) + \
+              (c1 * ms1 * cryptomath.modinv(ms1, n1)) + \
+              (c2 * ms2 * cryptomath.modinv(ms2, n2))) % n012
 
-        r = rsa.invpow(r3, 3)
+        r = cryptomath.invpow(r3, 3)
 
         self.assertEqual(m, r)
         
@@ -114,10 +115,10 @@ class rsa_test(unittest.TestCase):
 
         # The attack: can't decrypt directly
         s = random.randrange(1, 2 ** 1024) % n
-        c_dash = (rsa.modexp(s, e, n) * c) % n
+        c_dash = (cryptomath.modexp(s, e, n) * c) % n
         print c_dash
         p_dash = rsa.decrypt(c_dash, d, n)
-        p = (p_dash * rsa.modinv(s, n)) % n
+        p = (p_dash * cryptomath.modinv(s, n)) % n
         
         self.assertEqual(m, p)
 

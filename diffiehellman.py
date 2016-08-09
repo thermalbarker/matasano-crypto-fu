@@ -1,27 +1,13 @@
 from aes import aes
 from hash import sha1
 from cryptobuffer import cryptobuffer
-
-# A = (g ** a) % p
-# Nice explanation here:
-# https://en.wikipedia.org/wiki/Modular_exponentiation
-def tom_modexp(g, a, p):
-    if (p == 1):
-        return 0
-    c = 1
-    g = g % p
-    while a > 0:
-        if ((a % 2) == 1):
-            c = (c * g) % p
-        a = a >> 1
-        g = (g ** 2) % p
-    return c
+from cryptomath import modexp
 
 def dh_public_key(p, g, private_key):
-    return tom_modexp(g, private_key, p)
+    return modexp(g, private_key, p)
 
 def dh_shared_secret(p, pub_theirs, priv_ours):
-    return tom_modexp(pub_theirs, priv_ours, p)
+    return modexp(pub_theirs, priv_ours, p)
 
 def dh_encrypt(msg, s, iv):
     mAES = aes()

@@ -1,7 +1,8 @@
 import unittest
 import random
-from diffiehellman import dh_public_key, dh_shared_secret, tom_modexp, dh_encrypt, dh_decrypt
+from diffiehellman import dh_public_key, dh_shared_secret, dh_encrypt, dh_decrypt
 from cryptobuffer import cryptobuffer
+from cryptomath import modexp
 
 class diffiehellman_test(unittest.TestCase):
     # Some NIST BigNums
@@ -10,7 +11,7 @@ class diffiehellman_test(unittest.TestCase):
     private_key_size = 2 ** 1024
 
     def test_mymodexp(self):
-        A = tom_modexp(4, 13, 497)
+        A = modexp(4, 13, 497)
         self.assertEqual(445, A)
 
     def check_shared(self, p, g):
