@@ -40,6 +40,7 @@ class dsa_test(unittest.TestCase):
         
         success = False
 
+        # Cheating here to reduce run-time (range should start from 0)
         for k in range(16384, 2 ** 16):
             x = d.recover_x(k, self.m, self.r, self.s)
             y = d.get_pub_key(x)
@@ -56,6 +57,25 @@ class dsa_test(unittest.TestCase):
         x_buf.fromInt(x)
         x_hash = d.hash(x_buf.toHex())
         self.assertEqual(0x0954edd5e0afe5542a4adf012611a91912a3ec16, x_hash)
+
+
+    def load_signatures(self, filename):
+        signatures = []
+        lines = [line.split(": ")[1].rstrip('\n') for line in open(filename)]
+        n = len(lines) / 4
+        for i in range(0, n):
+            msg = lines[i * 4]
+            s = int(lines[i * 4 + 1])
+            r = int(lines[i * 4 + 2])
+            m = int(lines[i * 4 + 3], 16)
+            signatures.append( (msg, s, r, m) )
+        print signatures
+        return signatures
+        
+
+    def test_repeated_nonce(self):
+        self.load_signatures("data/44.txt")
+
 
 if __name__ == '__main__':
     unittest.main()

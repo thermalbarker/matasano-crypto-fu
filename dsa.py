@@ -48,3 +48,13 @@ class dsa(object):
         b = cryptomath.modinv(r, self.q)
         x = (a * b) % self.q
         return x
+
+    # Here m1 and m2 are the messages themselves (not the hash as in the challenges)
+    def recover_k(self, m1, m2, s1, s2):
+        h1 = self.hash(m1)
+        h2 = self.hash(m2)
+        s_diff = (s1 - s2) % self.q
+        s_inv = cryptomath.modinv(s_diff, self.q)
+        h_diff = (h1 - h2) % self.q
+        k = (h_diff * s_inv) % self.q
+        return k
