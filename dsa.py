@@ -20,9 +20,12 @@ class dsa(object):
         r.mBytes = h.digest()
         return r.toInt()
 
+    def get_pub_key(self, x):
+        return cryptomath.modexp(self.g, x, self.p)
+
     def gen_key_pair(self):
         x = randrange(0, self.q)
-        y = cryptomath.modexp(self.g, x, self.p)
+        y = self.get_pub_key(x)
         return x, y
 
     def sign(self, x, m):
@@ -40,4 +43,8 @@ class dsa(object):
         v = u1 * u2 % self.p % self.q
         return v == r
 
-        
+    def recover_x(self, k, m, r, s):
+        a = ((s * k) - self.hash(m)) % self.q
+        b = cryptomath.modinv(r, self.q)
+        x = (a * b) % self.q
+        return x

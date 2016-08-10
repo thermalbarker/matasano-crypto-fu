@@ -2,6 +2,7 @@ import unittest
 import random
 from dsa import dsa
 import cryptomath
+from cryptobuffer import cryptobuffer
 
 class dsa_test(unittest.TestCase):
 
@@ -34,5 +35,27 @@ class dsa_test(unittest.TestCase):
         r, s = d.sign(x, self.m)
         self.assertTrue(d.verify(y, self.m, r, s))
         
+    def test_key_recovery(self):
+        d = dsa()
+        
+        success = False
+
+        for k in range(16384, 2 ** 16):
+            x = d.recover_x(k, self.m, self.r, self.s)
+            y = d.get_pub_key(x)
+            if y == self.y:
+                print "x: ", x
+                print "k: ", k
+                success = True
+                break
+
+        self.assertTrue(success)
+
+        # Now check the hash of the private key
+        x_buf = cryptobuffer()
+        x_buf.fromInt(x)
+        x_hash = d.hash(x_buf.toHex())
+        self.assertEqual(0x0954edd5e0afe5542a4adf012611a91912a3ec16, x_hash)
+
 if __name__ == '__main__':
     unittest.main()
