@@ -100,6 +100,31 @@ class dsa_test(unittest.TestCase):
         x_hash = self.private_key_hash(x)
         self.assertEqual(0xca8f6f7c66fa362d40760d135b763eb8527d3d52, x_hash)
 
+    def test_param_manipulation_g_zero(self):
+        d = dsa(g = 0)
+        x, y = d.gen_key_pair()
+        r, s = d.sign(x, self.m)
+        # r is always zero!
+        print "r: ", r
+        print "s: ", s
+        # Verify signature
+        self.assertTrue(d.verify(y, self.m, r, s))
+        # We can 'sign' anything with r = 0 and arbitrary s
+        self.assertTrue(d.verify(y, self.m, 0, 1234))
+
+    def test_param_manipulation_g_pplusone(self):
+        # Manipulated parameters
+        p = 0x800000000000000089e1855218a0e7dac38136ffafa72eda7859f2171e25e65eac698c1702578b07dc2a1076da241c76c62d374d8389ea5aeffd3226a0530cc565f3bf6b50929139ebeac04f48c3c84afb796d61e5a4f9a8fda812ab59494232c7d2b4deb50aa18ee9e132bfa85ac4374d7f9091abc3d015efc871a584471bb1
+        q = 0xf4f47f05794b256174bba6e9b396a7707e563c5b
+        g = p + 1
+
+        d = dsa(p, q, g)
+        x, y = d.gen_key_pair()
+        r, s = d.magic_signature(y)
+        self.assertTrue(d.verify(y, self.m, r, s))
+        self.assertTrue(d.verify(y, "Hello, world", r, s))
+        self.assertTrue(d.verify(y, "Goodbye, world", r, s))
+
 
 if __name__ == '__main__':
     unittest.main()
