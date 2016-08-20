@@ -1,6 +1,7 @@
 from hash import hash
 from cryptobuffer import cryptobuffer
 import time, operator, statistics, math
+#from text_histogram import histogram
 
 class hash_break():
 
@@ -29,9 +30,11 @@ class hash_break():
 
         return (None, None)
 
-    def timing_leak_attack(self, compare_func, message, max_len = 32):
+    def timing_leak_attack(self, compare_func, message, max_len = 32, stop_at_bytes = -1):
         hmac = cryptobuffer()
         total_start = time.time()
+
+        print "Simple timing leak attack on SHA1"
 
         for i in range(0, max_len):
             d = {}
@@ -39,19 +42,26 @@ class hash_break():
 
             print "Byte:", i
 
-            longest_c = 0
+            success = False
+            longest_c = -1
 
             for c in range(0, 256):
                 hmac.mBytes[i] = c
                 start = time.time()
-                compare_func(message, hmac)
+                success = compare_func(message, hmac)
                 elapsed = time.time() - start
-                d[c] = elapsed
+                d[c] = elapsed * 1000.0
+                
+                # If we have found a valid hash, no need to keep searching
+                if (success):
+                    longest_c = c
+                    break
 
             # Get the char with the longest time
-            longest_c = max(d.iteritems(), key=operator.itemgetter(1))[0]
-            signal = d[longest_c]
-            
+            if (not success):
+                longest_c = max(d.iteritems(), key=operator.itemgetter(1))[0]
+
+            signal = d[longest_c]            
             hmac.mBytes[i] = longest_c
 
             print "  Char: ", format(hex(longest_c)), "Time: ", d[longest_c]
@@ -62,10 +72,16 @@ class hash_break():
                 print "--> Valid Hmac! Exiting!"
                 break
 
+
+            if ((stop_at_bytes > 0) and (len(hmac.mBytes) >= stop_at_bytes)):
+                print "Exiting early, found:", stop_at_bytes, "bytes"
+                break
+
+
         return hmac.mBytes
 
 
-    def timing_leak_attack2(self, compare_func, message, stdevs = 3, max_len = 32, max_runs = 100):
+    def timing_leak_attack2(self, compare_func, message, max_len = 32, stop_at_bytes = -1, stdevs = 5, max_runs = 100):
         hmac = cryptobuffer()
         total_start = time.time()
         average = statistics.median
@@ -73,8 +89,8 @@ class hash_break():
         for i in range(0, max_len):
             d = {}
             aves = {}
+            p = []
             hmac.mBytes.append(0)
-            max_diff = -1
 
             print "Byte:", i
 
@@ -84,14 +100,21 @@ class hash_break():
             best_c = -1
 
             for j in range(0, max_runs):
+                success = False
 
                 for c in range(0, 256):
                     hmac.mBytes[i] = c
                     start = time.time()
-                    compare_func(message, hmac)
-                    elapsed = time.time() - start
+                    success = compare_func(message, hmac)
+                    elapsed = (time.time() - start) * 1000.0
                     d[c].append( elapsed )
+                    p.append( elapsed )
                     aves[c] = average( d[c] )
+
+                    # If we are successful, no need for analysis!
+                    if (success):
+                        longest_c = c
+                        break
 
                     # Assume c is the signal, calculate significance
                     bg = []
@@ -101,27 +124,30 @@ class hash_break():
                             bg.extend(a)
                     if ((len(bg) < 2) or (len(d[c]) < 2)):
                         continue
+                    bg_n   = len(bg)
                     bg_ave = average(bg)
                     bg_stdev = statistics.stdev(bg)
+                    sg_n   = len(d[c])
                     sg_ave = average(d[c])
                     sg_stdev = statistics.stdev(d[c])
                     
                     diff = (sg_ave - bg_ave) / bg_stdev
-                    diff_err = math.sqrt( (sg_stdev**2)/len(d[c]) + (bg_stdev**2)/len(bg) ) / bg_stdev
+                    diff_err = math.sqrt( sg_stdev**2/sg_n + bg_stdev**2/bg_n ) / bg_stdev
 
-                    if (diff > max_diff) and (diff_err < 1.0):
-                        max_diff = diff
-                        best_c = c
+                    if ((diff - diff_err) > stdevs):
+                        longest_c = c
 
                         print "    char:  ", format(hex(c))
-                        print "    x_bar(bg):", bg_ave, "sigma(bg):", bg_stdev/bg_ave, "n(bg):", len(bg)
-                        print "    x_bar(sg):", sg_ave, "sigma(sg):", sg_stdev/aves[c], "n(sg):", len(d[c])
+                        print "    x_bar(bg):", bg_ave, "sigma(bg):", bg_stdev, "n(bg):", len(bg)
+                        print "    x_bar(sg):", sg_ave, "sigma(sg):", sg_stdev, "n(sg):", len(d[c])
                         print "    n_sigma:", diff, "+/-", diff_err
+                        
+                        print "      --> Difference >", stdevs, "sigma, stopping!"
+                        break
 
-                        if (diff > stdevs):
-                            longest_c = c
-                            print "      --> Difference >", stdevs, "sigma, stopping!"
-                            break
+
+#                if (len(p) > 1):
+#                    histogram( p, None, None, 50 )                                       
 
                 if (longest_c >= 0):
                     break
@@ -138,5 +164,10 @@ class hash_break():
             if (compare_func(message, hmac)):
                 print "--> Valid Hmac! Exiting!"
                 break
+
+            if ((stop_at_bytes > 0) and (len(hmac.mBytes) >= stop_at_bytes)):
+                print "Exiting early, found:", stop_at_bytes, "bytes"
+                break
+
 
         return hmac.mBytes
