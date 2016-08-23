@@ -65,9 +65,12 @@ class cryptobuffer(bytearray):
     def toPrintable(self):
         s = ''
         for b in self.mBytes:
-            if chr(b) in string.printable:
-                s += chr(b)
-            else:
+            try:
+                if b in string.printable:
+                    s += b
+                else:
+                    s += "?"
+            except:
                 s += "?"
         return s
 
@@ -169,6 +172,6 @@ class cryptobuffer(bytearray):
 
     def hasOnlyPrintable(self):
         for b in self.mBytes:
-            if not chr(b) in string.printable:
+            if not b in string.printable:
                 return False
         return True

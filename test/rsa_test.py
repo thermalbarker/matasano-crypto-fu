@@ -1,6 +1,7 @@
 import unittest
 import random
 import rsa
+import rsa_parity_oracle
 import cryptomath
 from cryptobuffer import cryptobuffer
 
@@ -121,6 +122,20 @@ class rsa_test(unittest.TestCase):
         p = (p_dash * cryptomath.modinv(s, n)) % n
         
         self.assertEqual(m, p)
+
+    
+    def test_parity_oracle(self):
+        m = "VGhhdCdzIHdoeSBJIGZvdW5kIHlvdSBkb24ndCBwbGF5IGFyb3VuZCB3aXRoIHRoZSBGdW5reSBDb2xkIE1lZGluYQ=="
+        b = cryptobuffer()
+        b.fromBase64(m)
+
+        o = rsa_parity_oracle.oracle()
+        c = o.encrypt(b.toInt())
+
+        cracker = rsa_parity_oracle.cracker(o)
+
+        d = cracker.decrypt(c)
+        self.assertEqual(b.toInt(), d)
 
 if __name__ == '__main__':
     unittest.main()
